@@ -26,6 +26,16 @@ class SP_DEVINFO_DATA(ctypes.Structure):
 
 PSP_DEVINFO_DATA = ctypes.POINTER(SP_DEVINFO_DATA)
 
+class SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", DWORD),
+        ("InterfaceClassGuid", GUID),
+        ("Flags", DWORD),
+        ("Reserved", ULONG_PTR),
+    ]
+
+PSP_DEVICE_INTERFACE_DATA = ctypes.POINTER(SP_DEVICE_INTERFACE_DATA)
+
 SetupDiEnumDeviceInfo = setupapi.SetupDiEnumDeviceInfo
 SetupDiEnumDeviceInfo.argtypes = [
     HDEVINFO, # DeviceInfoSet
@@ -33,6 +43,16 @@ SetupDiEnumDeviceInfo.argtypes = [
     PSP_DEVINFO_DATA, # DeviceInfoData
 ]
 SetupDiEnumDeviceInfo.restype = BOOL
+
+SetupDiEnumDeviceInterfaces = setupapi.SetupDiEnumDeviceInterfaces
+SetupDiEnumDeviceInterfaces.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+    PSP_DEVINFO_DATA, # DeviceInfoData
+    LPGUID, # InterfaceClassGuid
+    DWORD, # MemberIndex
+    PSP_DEVICE_INTERFACE_DATA, # DeviceInterfaceData
+]
+SetupDiEnumDeviceInterfaces.restype = BOOL
 
 SetupDiGetClassDevs = setupapi.SetupDiGetClassDevsW
 SetupDiGetClassDevs.argtypes = [

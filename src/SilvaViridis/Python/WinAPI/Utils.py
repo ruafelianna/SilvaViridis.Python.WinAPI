@@ -8,8 +8,10 @@ from .setupapi import (
     DIGCF_DEVICEINTERFACE,
     DIGCF_PRESENT,
     HDEVINFO,
+    SP_DEVICE_INTERFACE_DATA,
     SP_DEVINFO_DATA,
     SetupDiEnumDeviceInfo,
+    SetupDiEnumDeviceInterfaces,
     SetupDiGetClassDevs,
     SetupDiGetDeviceRegistryProperty,
 )
@@ -112,3 +114,24 @@ def get_device_property(
     GlobalFree(buffer)
 
     return prop
+
+def get_devinterface_data(
+    hdevinfo : HDEVINFO,
+    guid : GUID,
+    index : int,
+):
+    intf_data = SP_DEVICE_INTERFACE_DATA()
+    intf_data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
+
+    success = SetupDiEnumDeviceInterfaces(
+        hdevinfo,
+        None,
+        ctypes.byref(guid),
+        index,
+        ctypes.byref(intf_data),
+    )
+
+    if success == FALSE:
+        raise Exception("Cannot fetch device interface data")
+
+    return intf_data
