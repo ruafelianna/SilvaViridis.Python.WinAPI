@@ -4,7 +4,7 @@ from .basetsd import ULONG_PTR
 from .guiddef import GUID, LPGUID
 from .minwindef import BOOL, DWORD, PBYTE, PDWORD
 from .windef import HWND
-from .winnt import PCWSTR
+from .winnt import PCWSTR, WCHAR
 
 setupapi = ctypes.windll.LoadLibrary("SetupAPI.dll")
 
@@ -36,6 +36,14 @@ class SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
 
 PSP_DEVICE_INTERFACE_DATA = ctypes.POINTER(SP_DEVICE_INTERFACE_DATA)
 
+class SP_DEVICE_INTERFACE_DETAIL_DATA_W(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", DWORD),
+        ("DevicePath", WCHAR * 1),
+    ]
+
+PSP_DEVICE_INTERFACE_DETAIL_DATA_W = ctypes.POINTER(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
+
 SetupDiEnumDeviceInfo = setupapi.SetupDiEnumDeviceInfo
 SetupDiEnumDeviceInfo.argtypes = [
     HDEVINFO, # DeviceInfoSet
@@ -62,6 +70,17 @@ SetupDiGetClassDevs.argtypes = [
     DWORD, # Flags
 ]
 SetupDiGetClassDevs.restype = HDEVINFO
+
+SetupDiGetDeviceInterfaceDetail = setupapi.SetupDiGetDeviceInterfaceDetailW
+SetupDiGetDeviceInterfaceDetail.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+    PSP_DEVICE_INTERFACE_DATA, # DeviceInterfaceData
+    PSP_DEVICE_INTERFACE_DETAIL_DATA_W, # DeviceInterfaceDetailData
+    DWORD, # DeviceInterfaceDetailDataSize
+    PDWORD, # RequiredSize
+    PSP_DEVINFO_DATA, # DeviceInfoData
+]
+SetupDiGetDeviceInterfaceDetail.restype = BOOL
 
 SetupDiGetDeviceRegistryProperty = setupapi.SetupDiGetDeviceRegistryPropertyW
 SetupDiGetDeviceRegistryProperty.argtypes = [

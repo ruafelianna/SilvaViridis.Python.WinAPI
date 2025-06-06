@@ -8,11 +8,14 @@ from .setupapi import (
     DIGCF_DEVICEINTERFACE,
     DIGCF_PRESENT,
     HDEVINFO,
+    PSP_DEVICE_INTERFACE_DETAIL_DATA_W,
     SP_DEVICE_INTERFACE_DATA,
+    SP_DEVICE_INTERFACE_DETAIL_DATA_W,
     SP_DEVINFO_DATA,
     SetupDiEnumDeviceInfo,
     SetupDiEnumDeviceInterfaces,
     SetupDiGetClassDevs,
+    SetupDiGetDeviceInterfaceDetail,
     SetupDiGetDeviceRegistryProperty,
 )
 from .winbase import GPTR, GlobalAlloc, GlobalFree
@@ -135,3 +138,55 @@ def get_devinterface_data(
         raise Exception("Cannot fetch device interface data")
 
     return intf_data
+
+def get_devinterface_devpath(
+    hdevinfo : HDEVINFO,
+    intf_data : SP_DEVICE_INTERFACE_DATA,
+):
+    required_length = DWORD(0)
+
+    success = SetupDiGetDeviceInterfaceDetail(
+        hdevinfo,
+        ctypes.byref(intf_data),
+        None,
+        0,
+        ctypes.byref(required_length),
+        None,
+    )
+
+    last_error = GetLastError()
+
+    if (
+        success == FALSE
+        and last_error != ERROR_INSUFFICIENT_BUFFER
+    ):
+        raise Exception(f"Cannot get a length for the interface details")
+
+    details_buffer = GlobalAlloc(GPTR, required_length.value)
+
+    if details_buffer is None:
+        raise Exception(f"Cannot allocate memory for the details")
+
+    details = ctypes.cast(details_buffer, PSP_DEVICE_INTERFACE_DETAIL_DATA_W)
+
+    details.contents.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
+
+    success = SetupDiGetDeviceInterfaceDetail(
+        hdevinfo,
+        ctypes.byref(intf_data),
+        details,
+        required_length.value,
+        ctypes.byref(required_length),
+        None,
+    )
+
+    if success == FALSE:
+        GlobalFree(details_buffer)
+        raise Exception(f"Cannot get the interface details")
+
+    devpath = get_string(
+        details_buffer + ctypes.sizeof(DWORD),
+        required_length.value - ctypes.sizeof(DWORD)
+    )
+
+    return devpath
