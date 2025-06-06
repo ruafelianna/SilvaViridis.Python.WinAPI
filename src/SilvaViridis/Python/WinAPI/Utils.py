@@ -22,7 +22,7 @@ from .winerror import (
 def get_string(pointer : HGLOBAL, length : int) -> str:
     return (ctypes.c_wchar * (length // 2)).from_address(int(pointer)).value
 
-def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, list[SP_DEVINFO_DATA]]:
+def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, dict[int, SP_DEVINFO_DATA]]:
     hdevinfo = SetupDiGetClassDevs(
         ctypes.byref(guid),
         None,
@@ -31,11 +31,11 @@ def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, list[SP_DEVINFO_DAT
     )
 
     if hdevinfo == INVALID_HANDLE_VALUE:
-        return None, []
+        return None, {}
 
     index = 0
     error = 0
-    result : list[SP_DEVINFO_DATA] = []
+    result : dict[int, SP_DEVINFO_DATA] = {}
 
     while error != ERROR_NO_MORE_ITEMS:
         devinfo = SP_DEVINFO_DATA()
@@ -47,15 +47,15 @@ def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, list[SP_DEVINFO_DAT
             devinfo,
         )
 
-        index += 1
-
         if success == TRUE:
-            result.append(devinfo)
+            result[index] = devinfo
         else:
             error = GetLastError()
 
             if error != ERROR_NO_MORE_ITEMS:
                 raise Exception(f"WinAPI error: {error}")
+
+        index += 1
 
     return hdevinfo, result
 

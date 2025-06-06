@@ -5,7 +5,8 @@ from SilvaViridis.Python.WinAPI.usbiodef import GUID_DEVINTERFACE_USB_DEVICE
 set_pointer, dev_enumeration = enumerate_devices(GUID_DEVINTERFACE_USB_DEVICE)
 
 if set_pointer is not None:
-    for dev in dev_enumeration:
+    for index, dev in dev_enumeration.items():
+        print(index)
         print(dev.ClassGuid)
         print(get_device_property(set_pointer, dev, SPDRP_DEVICEDESC))
         print(get_device_property(set_pointer, dev, SPDRP_DRIVER))
