@@ -9,6 +9,7 @@ from SilvaViridis.Python.WinAPI.setupapi import SPDRP_DEVICEDESC, SPDRP_DRIVER
 from SilvaViridis.Python.WinAPI.usbiodef import (
     GUID_DEVINTERFACE_USB_DEVICE,
     GUID_DEVINTERFACE_USB_HUB,
+    GUID_DEVINTERFACE_USB_HOST_CONTROLLER,
 )
 
 def print_devices(guid : GUID):
@@ -39,3 +40,4 @@ def print_devices(guid : GUID):
 
 print_devices(GUID_DEVINTERFACE_USB_DEVICE)
 print_devices(GUID_DEVINTERFACE_USB_HUB)
+print_devices(GUID_DEVINTERFACE_USB_HOST_CONTROLLER)
