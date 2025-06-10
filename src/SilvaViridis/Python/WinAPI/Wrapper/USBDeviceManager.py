@@ -11,6 +11,7 @@ from .SetupAPI import (
     get_device_property,
     get_device_interface,
     get_device_interface_devpath,
+    free_device_list,
 )
 from .USBGuids import (
     GUID_DEVINTERFACE_USB_DEVICE,
@@ -27,7 +28,9 @@ class USBDeviceManager:
         hubs = self.enumerate_devices(GUID_DEVINTERFACE_USB_HUB)
 
         print(devs)
+        print("-" * 20)
         print(hcs)
+        print("-" * 20)
         print(hubs)
 
     def enumerate_devices(
@@ -44,33 +47,36 @@ class USBDeviceManager:
             IncludedInfoFlags.PRESENT | IncludedInfoFlags.DEVICEINTERFACE,
         )
 
-        index = 0
-        while True:
-            try:
-                devinfo = next_device_info(hdevinfo, index)
-            except NoMoreItems:
-                break
-
-            interfaceinfo = get_device_interface(hdevinfo, guid, index)
-
-            devpath = get_device_interface_devpath(hdevinfo, interfaceinfo)
-
-            props : dict[DevProperties, str | int | bytes | None] = {}
-
-            for prop_name in DevProperties if properties is None else properties:
+        try:
+            index = 0
+            while True:
                 try:
-                    prop = get_device_property(hdevinfo, devinfo, prop_name)
-                    props[prop_name] = prop
-                except:
-                    pass
+                    devinfo = next_device_info(hdevinfo, index)
+                except NoMoreItems:
+                    break
 
-            result.append(USBDeviceNode(
-                class_guid = devinfo.class_guid,
-                interface_class_guid = interfaceinfo.interface_class_guid,
-                devpath = devpath,
-                props = props,
-            ))
+                interfaceinfo = get_device_interface(hdevinfo, guid, index)
 
-            index += 1
+                devpath = get_device_interface_devpath(hdevinfo, interfaceinfo)
+
+                props : dict[DevProperties, str | int | bytes | None] = {}
+
+                for prop_name in DevProperties if properties is None else properties:
+                    try:
+                        prop = get_device_property(hdevinfo, devinfo, prop_name)
+                        props[prop_name] = prop
+                    except:
+                        pass
+
+                result.append(USBDeviceNode(
+                    class_guid = devinfo.class_guid,
+                    interface_class_guid = interfaceinfo.interface_class_guid,
+                    devpath = devpath,
+                    props = props,
+                ))
+
+                index += 1
+        finally:
+            free_device_list(hdevinfo)
 
         return result

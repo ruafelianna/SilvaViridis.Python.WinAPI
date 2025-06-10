@@ -28,6 +28,7 @@ from ..setupapi import (
     SetupDiGetClassDevs,
     SetupDiGetDeviceRegistryProperty,
     SetupDiGetDeviceInterfaceDetail,
+    SetupDiDestroyDeviceInfoList,
 )
 
 class IncludedInfoFlags(Flag):
@@ -305,3 +306,8 @@ def get_device_interface_devpath(
     )
 
     return devpath
+
+def free_device_list(
+    hdevinfo : C.c_void_p,
+) -> None:
+    SetupDiDestroyDeviceInfoList(hdevinfo)

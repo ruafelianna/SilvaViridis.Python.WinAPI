@@ -98,3 +98,9 @@ SetupDiGetDeviceRegistryProperty.argtypes = [
     W.PDWORD, # RequiredSize
 ]
 SetupDiGetDeviceRegistryProperty.restype = W.BOOL
+
+SetupDiDestroyDeviceInfoList = _setupapi.SetupDiDestroyDeviceInfoList
+SetupDiDestroyDeviceInfoList.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+]
+SetupDiDestroyDeviceInfoList.restype = W.BOOL
