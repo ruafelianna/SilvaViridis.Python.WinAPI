@@ -1,29 +1,20 @@
 from __future__ import annotations
 
 import ctypes as C
+import ctypes.wintypes as W
 
-from .basetsd import ULONG_PTR
 from .guiddef import GUID, LPGUID
-from .minwindef import BOOL, DWORD, PBYTE, PDWORD
-from .windef import HWND
-from .winnt import PCWSTR, WCHAR
 
 setupapi = C.windll.LoadLibrary("SetupAPI.dll")
 
 HDEVINFO = C.c_void_p
 
-DIGCF_PRESENT = 0x00000002
-DIGCF_DEVICEINTERFACE = 0x00000010
-
-SPDRP_DEVICEDESC = DWORD(0x00000000)
-SPDRP_DRIVER = DWORD(0x00000009)
-
 class SP_DEVINFO_DATA(C.Structure):
     _fields_ = [
-        ("cbSize", DWORD),
+        ("cbSize", W.DWORD),
         ("ClassGuid", GUID),
-        ("DevInst", DWORD),
-        ("Reserved", ULONG_PTR),
+        ("DevInst", W.DWORD),
+        ("Reserved", C.c_void_p),
     ]
 
     @staticmethod
@@ -36,10 +27,10 @@ PSP_DEVINFO_DATA = C.POINTER(SP_DEVINFO_DATA)
 
 class SP_DEVICE_INTERFACE_DATA(C.Structure):
     _fields_ = [
-        ("cbSize", DWORD),
+        ("cbSize", W.DWORD),
         ("InterfaceClassGuid", GUID),
-        ("Flags", DWORD),
-        ("Reserved", ULONG_PTR),
+        ("Flags", W.DWORD),
+        ("Reserved", C.c_void_p),
     ]
 
     @staticmethod
@@ -52,8 +43,8 @@ PSP_DEVICE_INTERFACE_DATA = C.POINTER(SP_DEVICE_INTERFACE_DATA)
 
 class SP_DEVICE_INTERFACE_DETAIL_DATA_W(C.Structure):
     _fields_ = [
-        ("cbSize", DWORD),
-        ("DevicePath", WCHAR * 1),
+        ("cbSize", W.DWORD),
+        ("DevicePath", W.WCHAR * 1),
     ]
 
 PSP_DEVICE_INTERFACE_DETAIL_DATA_W = C.POINTER(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
@@ -61,27 +52,27 @@ PSP_DEVICE_INTERFACE_DETAIL_DATA_W = C.POINTER(SP_DEVICE_INTERFACE_DETAIL_DATA_W
 SetupDiEnumDeviceInfo = setupapi.SetupDiEnumDeviceInfo
 SetupDiEnumDeviceInfo.argtypes = [
     HDEVINFO, # DeviceInfoSet
-    DWORD, # MemberIndex
+    W.DWORD, # MemberIndex
     PSP_DEVINFO_DATA, # DeviceInfoData
 ]
-SetupDiEnumDeviceInfo.restype = BOOL
+SetupDiEnumDeviceInfo.restype = W.BOOL
 
 SetupDiEnumDeviceInterfaces = setupapi.SetupDiEnumDeviceInterfaces
 SetupDiEnumDeviceInterfaces.argtypes = [
     HDEVINFO, # DeviceInfoSet
     PSP_DEVINFO_DATA, # DeviceInfoData
     LPGUID, # InterfaceClassGuid
-    DWORD, # MemberIndex
+    W.DWORD, # MemberIndex
     PSP_DEVICE_INTERFACE_DATA, # DeviceInterfaceData
 ]
-SetupDiEnumDeviceInterfaces.restype = BOOL
+SetupDiEnumDeviceInterfaces.restype = W.BOOL
 
 SetupDiGetClassDevs = setupapi.SetupDiGetClassDevsW
 SetupDiGetClassDevs.argtypes = [
     LPGUID, # ClassGuid
-    PCWSTR, # Enumerator
-    HWND, # hwndParent
-    DWORD, # Flags
+    W.PWCHAR, # Enumerator
+    W.HWND, # hwndParent
+    W.DWORD, # Flags
 ]
 SetupDiGetClassDevs.restype = HDEVINFO
 
@@ -90,20 +81,20 @@ SetupDiGetDeviceInterfaceDetail.argtypes = [
     HDEVINFO, # DeviceInfoSet
     PSP_DEVICE_INTERFACE_DATA, # DeviceInterfaceData
     PSP_DEVICE_INTERFACE_DETAIL_DATA_W, # DeviceInterfaceDetailData
-    DWORD, # DeviceInterfaceDetailDataSize
-    PDWORD, # RequiredSize
+    W.DWORD, # DeviceInterfaceDetailDataSize
+    W.PDWORD, # RequiredSize
     PSP_DEVINFO_DATA, # DeviceInfoData
 ]
-SetupDiGetDeviceInterfaceDetail.restype = BOOL
+SetupDiGetDeviceInterfaceDetail.restype = W.BOOL
 
 SetupDiGetDeviceRegistryProperty = setupapi.SetupDiGetDeviceRegistryPropertyW
 SetupDiGetDeviceRegistryProperty.argtypes = [
     HDEVINFO, # DeviceInfoSet
     PSP_DEVINFO_DATA, # DeviceInfoData
-    DWORD, # Property
-    PDWORD, # PropertyRegDataType
-    PBYTE, # PropertyBuffer
-    DWORD, # PropertyBufferSize
-    PDWORD, # RequiredSize
+    W.DWORD, # Property
+    W.PDWORD, # PropertyRegDataType
+    W.PBYTE, # PropertyBuffer
+    W.DWORD, # PropertyBufferSize
+    W.PDWORD, # RequiredSize
 ]
-SetupDiGetDeviceRegistryProperty.restype = BOOL
+SetupDiGetDeviceRegistryProperty.restype = W.BOOL

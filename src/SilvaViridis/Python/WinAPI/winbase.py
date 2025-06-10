@@ -1,24 +1,16 @@
 import ctypes as C
 
-from .basetsd import SIZE_T
-from .minwindef import HGLOBAL, UINT
-
 kernel32 = C.windll.LoadLibrary("Kernel32.dll")
-
-GMEM_FIXED = 0x0000
-GMEM_ZEROINIT = 0x0040
-
-GPTR = GMEM_FIXED | GMEM_ZEROINIT
 
 GlobalAlloc = kernel32.GlobalAlloc
 GlobalAlloc.argtypes = [
-    UINT, # uFlags
-    SIZE_T, # dwBytes
+    C.c_uint, # uFlags
+    C.c_size_t, # dwBytes
 ]
-GlobalAlloc.restype = HGLOBAL
+GlobalAlloc.restype = C.c_void_p
 
 GlobalFree = kernel32.GlobalFree
 GlobalFree.argtypes = [
-    HGLOBAL, # hMem
+    C.c_void_p, # hMem
 ]
-GlobalFree.restype = HGLOBAL
+GlobalFree.restype = C.c_void_p
