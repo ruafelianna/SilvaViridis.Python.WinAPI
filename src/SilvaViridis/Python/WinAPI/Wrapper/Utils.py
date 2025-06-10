@@ -18,7 +18,10 @@ def guid_to_uuid(guid : GUID) -> UUID:
 def str_to_ptr(data : str) -> C.c_wchar_p:
     return C.c_wchar_p(data)
 
-def ptr_to_str(ptr : C.c_void_p, length : int) -> str:
-    if ptr.value is None:
-        return ""
-    return (C.c_wchar * (length // 2)).from_address(ptr.value).value
+def ptr_to_str(ptr : C.c_void_p | int, length : int) -> str:
+    if isinstance(ptr, C.c_void_p):
+        if ptr.value is None:
+            return ""
+        ptr = ptr.value
+
+    return (C.c_wchar * (length // 2)).from_address(ptr).value

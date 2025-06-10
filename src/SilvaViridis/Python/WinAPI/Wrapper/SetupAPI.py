@@ -301,7 +301,7 @@ def get_device_interface_devpath(
         raise_ex(C.GetLastError())
 
     devpath = ptr_to_str(
-        C.c_void_p(int(details_buffer) + C.sizeof(W.DWORD)),
+        int(details_buffer) + C.sizeof(W.DWORD),
         required_length.value - C.sizeof(W.DWORD)
     )
 
