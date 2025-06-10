@@ -1,9 +1,9 @@
-import ctypes
+import ctypes as C
 
 from .basetsd import SIZE_T
 from .minwindef import HGLOBAL, UINT
 
-kernel32 = ctypes.windll.LoadLibrary("Kernel32.dll")
+kernel32 = C.windll.LoadLibrary("Kernel32.dll")
 
 GMEM_FIXED = 0x0000
 GMEM_ZEROINIT = 0x0040

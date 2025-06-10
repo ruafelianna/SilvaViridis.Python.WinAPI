@@ -1,12 +1,12 @@
-import ctypes
-from ctypes import wintypes
+import ctypes as C
+import ctypes.wintypes as W
 
-BOOL = wintypes.INT
-DWORD = wintypes.DWORD
-HGLOBAL = wintypes.HANDLE
-PBYTE = ctypes.POINTER(wintypes.BYTE)
-PDWORD = ctypes.POINTER(DWORD)
-UINT = ctypes.c_uint
+BOOL = W.INT
+DWORD = W.DWORD
+HGLOBAL = W.HANDLE
+PBYTE = C.POINTER(W.BYTE)
+PDWORD = C.POINTER(DWORD)
+UINT = C.c_uint
 
 FALSE = 0
 TRUE = 1

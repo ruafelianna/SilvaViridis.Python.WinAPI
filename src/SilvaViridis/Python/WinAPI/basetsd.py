@@ -1,4 +1,4 @@
-import ctypes
+import ctypes as C
 
-ULONG_PTR = ctypes.c_void_p
-SIZE_T = ctypes.c_size_t
+ULONG_PTR = C.c_void_p
+SIZE_T = C.c_size_t

@@ -1,4 +1,4 @@
-from ctypes import wintypes
+import ctypes.wintypes as W
 
-PCWSTR = wintypes.PWCHAR
-WCHAR = wintypes.WCHAR
+PCWSTR = W.PWCHAR
+WCHAR = W.WCHAR

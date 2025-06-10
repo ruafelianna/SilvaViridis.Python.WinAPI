@@ -1,4 +1,4 @@
-import ctypes
+import ctypes as C
 
 from .errhandlingapi import GetLastError
 from .guiddef import GUID
@@ -25,11 +25,11 @@ from .winerror import (
 )
 
 def get_string(pointer : HGLOBAL, length : int) -> str:
-    return (ctypes.c_wchar * (length // 2)).from_address(int(pointer)).value
+    return (C.c_wchar * (length // 2)).from_address(int(pointer)).value
 
 def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, dict[int, SP_DEVINFO_DATA]]:
     hdevinfo = SetupDiGetClassDevs(
-        ctypes.byref(guid),
+        C.byref(guid),
         None,
         None,
         DIGCF_PRESENT | DIGCF_DEVICEINTERFACE,
@@ -44,7 +44,7 @@ def enumerate_devices(guid : GUID) -> tuple[HDEVINFO | None, dict[int, SP_DEVINF
 
     while error != ERROR_NO_MORE_ITEMS:
         devinfo = SP_DEVINFO_DATA()
-        devinfo.cbSize = ctypes.sizeof(SP_DEVINFO_DATA)
+        devinfo.cbSize = C.sizeof(SP_DEVINFO_DATA)
 
         success = SetupDiEnumDeviceInfo(
             hdevinfo,
@@ -73,12 +73,12 @@ def get_device_property(
 
     success = SetupDiGetDeviceRegistryProperty(
         hdevinfo,
-        ctypes.byref(devinfo),
+        C.byref(devinfo),
         property,
         None,
         None,
         0,
-        ctypes.byref(required_length),
+        C.byref(required_length),
     )
 
     last_error = GetLastError()
@@ -97,11 +97,11 @@ def get_device_property(
     if buffer is None:
         raise Exception(f"Cannot allocate memory for the buffer")
 
-    byte_array = ctypes.cast(buffer, ctypes.POINTER(ctypes.c_ubyte))
+    byte_array = C.cast(buffer, C.POINTER(C.c_ubyte))
 
     success = SetupDiGetDeviceRegistryProperty(
         hdevinfo,
-        ctypes.byref(devinfo),
+        C.byref(devinfo),
         property,
         None,
         byte_array,
@@ -124,14 +124,14 @@ def get_devinterface_data(
     index : int,
 ):
     intf_data = SP_DEVICE_INTERFACE_DATA()
-    intf_data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
+    intf_data.cbSize = C.sizeof(SP_DEVICE_INTERFACE_DATA)
 
     success = SetupDiEnumDeviceInterfaces(
         hdevinfo,
         None,
-        ctypes.byref(guid),
+        C.byref(guid),
         index,
-        ctypes.byref(intf_data),
+        C.byref(intf_data),
     )
 
     if success == FALSE:
@@ -147,10 +147,10 @@ def get_devinterface_devpath(
 
     success = SetupDiGetDeviceInterfaceDetail(
         hdevinfo,
-        ctypes.byref(intf_data),
+        C.byref(intf_data),
         None,
         0,
-        ctypes.byref(required_length),
+        C.byref(required_length),
         None,
     )
 
@@ -167,16 +167,16 @@ def get_devinterface_devpath(
     if details_buffer is None:
         raise Exception(f"Cannot allocate memory for the details")
 
-    details = ctypes.cast(details_buffer, PSP_DEVICE_INTERFACE_DETAIL_DATA_W)
+    details = C.cast(details_buffer, PSP_DEVICE_INTERFACE_DETAIL_DATA_W)
 
-    details.contents.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
+    details.contents.cbSize = C.sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
 
     success = SetupDiGetDeviceInterfaceDetail(
         hdevinfo,
-        ctypes.byref(intf_data),
+        C.byref(intf_data),
         details,
         required_length.value,
-        ctypes.byref(required_length),
+        C.byref(required_length),
         None,
     )
 
@@ -185,8 +185,8 @@ def get_devinterface_devpath(
         raise Exception(f"Cannot get the interface details")
 
     devpath = get_string(
-        details_buffer + ctypes.sizeof(DWORD),
-        required_length.value - ctypes.sizeof(DWORD)
+        details_buffer + C.sizeof(DWORD),
+        required_length.value - C.sizeof(DWORD)
     )
 
     return devpath

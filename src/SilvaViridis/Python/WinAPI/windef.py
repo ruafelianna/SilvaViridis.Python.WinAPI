@@ -1,3 +1,3 @@
-from ctypes import wintypes
+import ctypes.wintypes as W
 
-HWND = wintypes.HWND
+HWND = W.HWND
