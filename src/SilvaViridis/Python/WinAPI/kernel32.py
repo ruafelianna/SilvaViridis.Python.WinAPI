@@ -14,16 +14,16 @@ LPSECURITY_ATTRIBUTES = C.POINTER(SECURITY_ATTRIBUTES)
 
 GlobalAlloc = _kernel32.GlobalAlloc
 GlobalAlloc.argtypes = [
-    C.c_uint, # uFlags
+    W.UINT, # uFlags
     C.c_size_t, # dwBytes
 ]
-GlobalAlloc.restype = C.c_void_p
+GlobalAlloc.restype = W.HGLOBAL
 
 GlobalFree = _kernel32.GlobalFree
 GlobalFree.argtypes = [
-    C.c_void_p, # hMem
+    W.HGLOBAL, # hMem
 ]
-GlobalFree.restype = C.c_void_p
+GlobalFree.restype = W.HGLOBAL
 
 CreateFile = _kernel32.CreateFileW
 CreateFile.argtypes = [
@@ -33,12 +33,12 @@ CreateFile.argtypes = [
     LPSECURITY_ATTRIBUTES, # lpSecurityAttributes
     W.DWORD, # dwCreationDisposition
     W.DWORD, # dwFlagsAndAttributes
-    C.c_void_p, # hTemplateFile
+    W.HANDLE, # hTemplateFile
 ]
-CreateFile.restype = C.c_void_p
+CreateFile.restype = W.HANDLE
 
 CloseHandle = _kernel32.CloseHandle
 CloseHandle.argtypes = [
-    C.c_void_p,
+    W.HANDLE,
 ]
 CloseHandle.restype = W.BOOL
