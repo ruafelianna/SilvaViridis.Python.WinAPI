@@ -16,6 +16,9 @@ from .IO import (
     create_file,
     close_file,
 )
+from .IOAPISet import (
+    ioctl_get_hcd_driver_key_name,
+)
 from .SetupAPI import (
     IncludedInfoFlags,
     DevProperties,
@@ -125,5 +128,12 @@ class USBDeviceManager:
             ShareModes.WRITE,
             CreationModes.OPEN_EXISTING,
         )
-        close_file(hcfd)
-        return USBHostControllerInfo()
+
+        try:
+            driver_key_name = ioctl_get_hcd_driver_key_name(hcfd)
+        finally:
+            close_file(hcfd)
+
+        return USBHostControllerInfo(
+            driver_key_name = driver_key_name,
+        )

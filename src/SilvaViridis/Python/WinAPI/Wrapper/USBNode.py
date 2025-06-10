@@ -22,5 +22,6 @@ class USBDeviceInfo(USBNodeInfo):
 class USBHubInfo(USBNodeInfo):
     pass
 
+@dataclass
 class USBHostControllerInfo(USBNodeInfo):
-    pass
+    driver_key_name : str
