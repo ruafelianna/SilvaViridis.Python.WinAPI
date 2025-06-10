@@ -1,0 +1,17 @@
+from enum import Enum
+
+class ValueType(Enum):
+    NONE = 0
+    SZ = 1
+    EXPAND_SZ = 2
+    BINARY = 3
+    DWORD = 4
+    DWORD_LITTLE_ENDIAN = 4
+    DWORD_BIG_ENDIAN = 5
+    LINK = 6
+    MULTI_SZ = 7
+    RESOURCE_LIST = 8
+    FULL_RESOURCE_DESCRIPTOR = 9
+    RESOURCE_REQUIREMENTS_LIST = 10
+    QWORD = 11
+    QWORD_LITTLE_ENDIAN = 11

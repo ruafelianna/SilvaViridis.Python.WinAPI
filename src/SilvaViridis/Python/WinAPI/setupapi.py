@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ctypes
 
 from .basetsd import ULONG_PTR
@@ -24,6 +26,12 @@ class SP_DEVINFO_DATA(ctypes.Structure):
         ("Reserved", ULONG_PTR),
     ]
 
+    @staticmethod
+    def create() -> SP_DEVINFO_DATA:
+        data = SP_DEVINFO_DATA()
+        data.cbSize = ctypes.sizeof(SP_DEVINFO_DATA)
+        return data
+
 PSP_DEVINFO_DATA = ctypes.POINTER(SP_DEVINFO_DATA)
 
 class SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
@@ -33,6 +41,12 @@ class SP_DEVICE_INTERFACE_DATA(ctypes.Structure):
         ("Flags", DWORD),
         ("Reserved", ULONG_PTR),
     ]
+
+    @staticmethod
+    def create() -> SP_DEVICE_INTERFACE_DATA:
+        data = SP_DEVICE_INTERFACE_DATA()
+        data.cbSize = ctypes.sizeof(SP_DEVICE_INTERFACE_DATA)
+        return data
 
 PSP_DEVICE_INTERFACE_DATA = ctypes.POINTER(SP_DEVICE_INTERFACE_DATA)
 
