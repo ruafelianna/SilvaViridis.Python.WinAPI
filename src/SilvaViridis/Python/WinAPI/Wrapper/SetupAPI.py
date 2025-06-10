@@ -21,8 +21,8 @@ from .Utils import (
 from ..setupapi import (
     SP_DEVINFO_DATA,
     SP_DEVICE_INTERFACE_DATA,
-    SP_DEVICE_INTERFACE_DETAIL_DATA_W,
-    PSP_DEVICE_INTERFACE_DETAIL_DATA_W,
+    SP_DEVICE_INTERFACE_DETAIL_DATA,
+    PSP_DEVICE_INTERFACE_DETAIL_DATA,
     SetupDiEnumDeviceInfo,
     SetupDiEnumDeviceInterfaces,
     SetupDiGetClassDevs,
@@ -282,9 +282,9 @@ def get_device_interface_devpath(
     if details_buffer is None:
         raise MemAllocError()
 
-    details = C.cast(details_buffer, PSP_DEVICE_INTERFACE_DETAIL_DATA_W)
+    details = C.cast(details_buffer, PSP_DEVICE_INTERFACE_DETAIL_DATA)
 
-    details.contents.cbSize = C.sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA_W)
+    details.contents.cbSize = C.sizeof(SP_DEVICE_INTERFACE_DETAIL_DATA)
 
     success = SetupDiGetDeviceInterfaceDetail(
         hdevinfo,

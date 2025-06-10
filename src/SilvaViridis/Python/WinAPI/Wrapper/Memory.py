@@ -2,7 +2,7 @@ import ctypes as C
 
 from enum import Flag
 
-from ..winbase import GlobalAlloc, GlobalFree
+from ..kernel32 import GlobalAlloc, GlobalFree
 
 class GMEM(Flag):
     FIXED = 0x0000
