@@ -3,6 +3,13 @@ from uuid import UUID
 
 from .DeviceNode import USBDeviceNode
 from .Exceptions import NoMoreItems
+from .IO import (
+    GenericRights,
+    ShareModes,
+    CreationModes,
+    create_file,
+    close_file,
+)
 from .SetupAPI import (
     IncludedInfoFlags,
     DevProperties,
@@ -67,6 +74,14 @@ class USBDeviceManager:
                         props[prop_name] = prop
                     except:
                         pass
+
+                hcfd = create_file(
+                    devpath,
+                    GenericRights.WRITE,
+                    ShareModes.WRITE,
+                    CreationModes.OPEN_EXISTING,
+                )
+                close_file(hcfd)
 
                 result.append(USBDeviceNode(
                     class_guid = devinfo.class_guid,
