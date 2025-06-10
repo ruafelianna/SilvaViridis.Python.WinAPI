@@ -1,7 +1,13 @@
 from collections.abc import Iterable
 from uuid import UUID
 
-from .DeviceNode import USBDeviceNode
+from .USBNode import (
+    USBNode,
+    USBNodeInfo,
+    USBDeviceInfo,
+    USBHubInfo,
+    USBHostControllerInfo,
+)
 from .Exceptions import NoMoreItems
 from .IO import (
     GenericRights,
@@ -44,8 +50,8 @@ class USBDeviceManager:
         self,
         guid : UUID,
         properties : Iterable[DevProperties] | None = None,
-    ) -> list[USBDeviceNode]:
-        result : list[USBDeviceNode] = []
+    ) -> list[USBNode]:
+        result : list[USBNode] = []
 
         hdevinfo = get_class_devs(
             guid,
@@ -75,19 +81,22 @@ class USBDeviceManager:
                     except:
                         pass
 
-                hcfd = create_file(
-                    devpath,
-                    GenericRights.WRITE,
-                    ShareModes.WRITE,
-                    CreationModes.OPEN_EXISTING,
-                )
-                close_file(hcfd)
+                info : USBNodeInfo
+                if guid == GUID_DEVINTERFACE_USB_DEVICE:
+                    info = self.get_device_info()
+                elif guid == GUID_DEVINTERFACE_USB_HUB:
+                    info = self.get_hub_info()
+                elif guid == GUID_DEVINTERFACE_USB_HOST_CONTROLLER:
+                    info = self.get_hc_info(devpath)
+                else:
+                    raise NotImplementedError()
 
-                result.append(USBDeviceNode(
+                result.append(USBNode(
                     class_guid = devinfo.class_guid,
                     interface_class_guid = interfaceinfo.interface_class_guid,
                     devpath = devpath,
                     props = props,
+                    devinfo = info,
                 ))
 
                 index += 1
@@ -95,3 +104,26 @@ class USBDeviceManager:
             free_device_list(hdevinfo)
 
         return result
+
+    def get_device_info(
+        self,
+    ) -> USBDeviceInfo:
+        return USBDeviceInfo()
+
+    def get_hub_info(
+        self,
+    ) -> USBHubInfo:
+        return USBHubInfo()
+
+    def get_hc_info(
+        self,
+        devpath : str,
+    ) -> USBHostControllerInfo:
+        hcfd = create_file(
+            devpath,
+            GenericRights.WRITE,
+            ShareModes.WRITE,
+            CreationModes.OPEN_EXISTING,
+        )
+        close_file(hcfd)
+        return USBHostControllerInfo()
