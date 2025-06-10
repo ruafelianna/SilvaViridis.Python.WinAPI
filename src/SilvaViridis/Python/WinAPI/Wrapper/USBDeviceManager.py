@@ -43,11 +43,31 @@ class USBDeviceManager:
         hcs = self.enumerate_devices(GUID_DEVINTERFACE_USB_HOST_CONTROLLER)
         hubs = self.enumerate_devices(GUID_DEVINTERFACE_USB_HUB)
 
-        print(devs)
+        for dev in devs:
+            self.print_device(dev)
         print("-" * 20)
-        print(hcs)
+        for dev in hcs:
+            self.print_device(dev)
         print("-" * 20)
-        print(hubs)
+        for dev in hubs:
+            self.print_device(dev)
+
+    def print_device(self, device : USBNode) -> None:
+        print(f"Class GUID: {device.class_guid}")
+        print(f"Interface Class GUID: {device.interface_class_guid}")
+        print(f"Device Path: {device.devpath}")
+
+        if isinstance(device.devinfo, USBDeviceInfo):
+            pass
+        elif isinstance(device.devinfo, USBHubInfo):
+            pass
+        elif isinstance(device.devinfo, USBHostControllerInfo):
+            print(f"HC Driver Key Name: {device.devinfo.driver_key_name}")
+        else:
+            raise NotImplementedError()
+
+        for prop, value in device.props.items():
+            print(f"{prop.name} [{prop.value}] = {value}")
 
     def enumerate_devices(
         self,
