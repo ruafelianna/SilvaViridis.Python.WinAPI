@@ -1,17 +1,17 @@
-from .USBNode import (
+from .USBDeviceManager import (
+    USBDeviceManager,
     USBNode,
     USBNodeInfo,
     USBDeviceInfo,
     USBHubInfo,
     USBHostControllerInfo,
 )
-from .USBDeviceManager import USBDeviceManager
 
 __all__ = [
+    "USBDeviceManager",
     "USBNode",
     "USBNodeInfo",
     "USBDeviceInfo",
     "USBHubInfo",
     "USBHostControllerInfo",
-    "USBDeviceManager",
 ]

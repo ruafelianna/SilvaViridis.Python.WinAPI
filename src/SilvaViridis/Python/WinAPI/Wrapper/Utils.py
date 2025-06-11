@@ -2,7 +2,7 @@ import ctypes as C
 
 from uuid import UUID
 
-from ..guiddef import GUID
+from ..types import GUID
 
 def uuid_to_guid(uuid : UUID) -> GUID:
     guid = GUID()

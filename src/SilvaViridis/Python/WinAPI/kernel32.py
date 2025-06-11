@@ -1,46 +1,12 @@
 import ctypes as C
 import ctypes.wintypes as W
 
+from .types import (
+    LPSECURITY_ATTRIBUTES,
+    LPOVERLAPPED,
+)
+
 _kernel32 = C.windll.LoadLibrary("Kernel32.dll")
-
-class SECURITY_ATTRIBUTES(C.Structure):
-    _fields_ = [
-        ("nLength", W.DWORD),
-        ("lpSecurityDescriptor", W.LPVOID),
-        ("bInheritHandle", W.BOOL),
-    ]
-
-LPSECURITY_ATTRIBUTES = C.POINTER(SECURITY_ATTRIBUTES)
-
-class OVERLAPPED_DUMMYSTRUCT(C.Structure):
-    _fields_ = [
-        ("Offset", W.DWORD),
-        ("OffsetHigh", W.DWORD),
-    ]
-
-class OVERLAPPED_DUMMYUNION(C.Union):
-    _fields_ = [
-        ("DUMMYSTRUCTNAME", OVERLAPPED_DUMMYSTRUCT),
-        ("Pointer", C.c_void_p),
-    ]
-
-class OVERLAPPED(C.Structure):
-    _fields_ = [
-        ("Internal", C.c_void_p),
-        ("InternalHigh", C.c_void_p),
-        ("DUMMYUNIONNAME", OVERLAPPED_DUMMYUNION),
-        ("hEvent", W.HANDLE),
-    ]
-
-LPOVERLAPPED = C.POINTER(OVERLAPPED)
-
-class USB_HCD_DRIVERKEY_NAME(C.Structure):
-    _fields_ = [
-        ("ActualLength", W.ULONG),
-        ("DriverKeyName", W.WCHAR * 1),
-    ]
-
-PUSB_HCD_DRIVERKEY_NAME = C.POINTER(USB_HCD_DRIVERKEY_NAME)
 
 GlobalAlloc = _kernel32.GlobalAlloc
 GlobalAlloc.argtypes = [

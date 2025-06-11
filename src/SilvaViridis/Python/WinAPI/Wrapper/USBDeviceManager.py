@@ -1,20 +1,13 @@
 import re
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from uuid import UUID
 
-from .USBNode import (
-    USBNode,
-    USBNodeInfo,
-    USBDeviceInfo,
-    USBHubInfo,
-    USBHostControllerInfo,
+from .Exceptions import (
+    NoMoreItems,
 )
-from .Exceptions import NoMoreItems
 from .IO import (
-    GenericRights,
-    ShareModes,
-    CreationModes,
     create_file,
     close_file,
 )
@@ -23,8 +16,6 @@ from .IOAPISet import (
     ioctl_get_usb_controller_info,
 )
 from .SetupAPI import (
-    IncludedInfoFlags,
-    DevProperties,
     get_class_devs,
     next_device_info,
     get_device_property,
@@ -33,19 +24,56 @@ from .SetupAPI import (
     get_device_instance_id,
     free_device_list,
 )
-from .USBGuids import (
-    GUID_DEVINTERFACE_USB_DEVICE,
-    GUID_DEVINTERFACE_USB_HOST_CONTROLLER,
-    GUID_DEVINTERFACE_USB_HUB,
+from .Types import (
+    GenericRights,
+    ShareModes,
+    CreationModes,
+    USBControllerFlavors,
+    HCFeatureFlags,
+    USBDevInterfaceGuids,
+    IncludedInfoFlags,
+    DevProperties,
 )
+
+class USBNodeInfo:
+    pass
+
+class USBDeviceInfo(USBNodeInfo):
+    pass
+
+class USBHubInfo(USBNodeInfo):
+    pass
+
+@dataclass
+class USBHostControllerInfo(USBNodeInfo):
+    driver_key_name : str
+    vendor_id : str
+    device_id : str
+    sub_sys_id : str
+    revision : str
+    pci_vendor_id : int
+    pci_device_id : int
+    pci_revision : int
+    number_of_root_ports : int
+    controller_flavor : USBControllerFlavors
+    hc_feature_flags : HCFeatureFlags
+
+@dataclass
+class USBNode:
+    class_guid : UUID
+    interface_class_guid : UUID
+    devpath : str
+    devid : str
+    props : dict[DevProperties, str | int | bytes | None]
+    devinfo : USBNodeInfo
 
 class USBDeviceManager:
     def build_tree(
         self,
     ):
-        devs = self.enumerate_devices(GUID_DEVINTERFACE_USB_DEVICE)
-        hcs = self.enumerate_devices(GUID_DEVINTERFACE_USB_HOST_CONTROLLER)
-        hubs = self.enumerate_devices(GUID_DEVINTERFACE_USB_HUB)
+        devs = self.enumerate_devices(USBDevInterfaceGuids.DEVICE)
+        hcs = self.enumerate_devices(USBDevInterfaceGuids.HOST_CONTROLLER)
+        hubs = self.enumerate_devices(USBDevInterfaceGuids.HUB)
 
         for dev in devs:
             self.print_device(dev)
@@ -86,13 +114,13 @@ class USBDeviceManager:
 
     def enumerate_devices(
         self,
-        guid : UUID,
+        guid : USBDevInterfaceGuids,
         properties : Iterable[DevProperties] | None = None,
     ) -> list[USBNode]:
         result : list[USBNode] = []
 
         hdevinfo = get_class_devs(
-            guid,
+            guid.value,
             None,
             None,
             IncludedInfoFlags.PRESENT | IncludedInfoFlags.DEVICEINTERFACE,
@@ -106,7 +134,7 @@ class USBDeviceManager:
                 except NoMoreItems:
                     break
 
-                interfaceinfo = get_device_interface(hdevinfo, guid, index)
+                interfaceinfo = get_device_interface(hdevinfo, guid.value, index)
 
                 devpath = get_device_interface_devpath(hdevinfo, interfaceinfo)
 
@@ -122,11 +150,11 @@ class USBDeviceManager:
                         pass
 
                 info : USBNodeInfo
-                if guid == GUID_DEVINTERFACE_USB_DEVICE:
+                if guid == USBDevInterfaceGuids.DEVICE:
                     info = self.get_device_info()
-                elif guid == GUID_DEVINTERFACE_USB_HUB:
+                elif guid == USBDevInterfaceGuids.HUB:
                     info = self.get_hub_info()
-                elif guid == GUID_DEVINTERFACE_USB_HOST_CONTROLLER:
+                elif guid == USBDevInterfaceGuids.HOST_CONTROLLER:
                     info = self.get_hc_info(devpath, devid)
                 else:
                     raise NotImplementedError()

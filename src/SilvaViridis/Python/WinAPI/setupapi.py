@@ -3,51 +3,15 @@ from __future__ import annotations
 import ctypes as C
 import ctypes.wintypes as W
 
-from .guiddef import GUID, LPGUID
+from .types import (
+    LPGUID,
+    HDEVINFO,
+    PSP_DEVINFO_DATA,
+    PSP_DEVICE_INTERFACE_DATA,
+    PSP_DEVICE_INTERFACE_DETAIL_DATA,
+)
 
 _setupapi = C.windll.LoadLibrary("SetupAPI.dll")
-
-HDEVINFO = C.c_void_p
-
-class SP_DEVINFO_DATA(C.Structure):
-    _fields_ = [
-        ("cbSize", W.DWORD),
-        ("ClassGuid", GUID),
-        ("DevInst", W.DWORD),
-        ("Reserved", C.c_void_p),
-    ]
-
-    @staticmethod
-    def create() -> SP_DEVINFO_DATA:
-        data = SP_DEVINFO_DATA()
-        data.cbSize = C.sizeof(SP_DEVINFO_DATA)
-        return data
-
-PSP_DEVINFO_DATA = C.POINTER(SP_DEVINFO_DATA)
-
-class SP_DEVICE_INTERFACE_DATA(C.Structure):
-    _fields_ = [
-        ("cbSize", W.DWORD),
-        ("InterfaceClassGuid", GUID),
-        ("Flags", W.DWORD),
-        ("Reserved", C.c_void_p),
-    ]
-
-    @staticmethod
-    def create() -> SP_DEVICE_INTERFACE_DATA:
-        data = SP_DEVICE_INTERFACE_DATA()
-        data.cbSize = C.sizeof(SP_DEVICE_INTERFACE_DATA)
-        return data
-
-PSP_DEVICE_INTERFACE_DATA = C.POINTER(SP_DEVICE_INTERFACE_DATA)
-
-class SP_DEVICE_INTERFACE_DETAIL_DATA(C.Structure):
-    _fields_ = [
-        ("cbSize", W.DWORD),
-        ("DevicePath", W.WCHAR * 1),
-    ]
-
-PSP_DEVICE_INTERFACE_DETAIL_DATA = C.POINTER(SP_DEVICE_INTERFACE_DETAIL_DATA)
 
 SetupDiEnumDeviceInfo = _setupapi.SetupDiEnumDeviceInfo
 SetupDiEnumDeviceInfo.argtypes = [
