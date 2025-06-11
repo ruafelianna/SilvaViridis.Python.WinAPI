@@ -2,6 +2,7 @@ from .Errors import (
     ERROR_INVALID_DATA,
     ERROR_INSUFFICIENT_BUFFER,
     ERROR_NO_MORE_ITEMS,
+    ERROR_NO_SUCH_DEVINST,
 )
 
 class MemAllocError(Exception): pass
@@ -17,11 +18,13 @@ class UnknownException(WinAPIException): pass
 class InvalidData(WinAPIException): pass
 class InsufficientBuffer(WinAPIException): pass
 class NoMoreItems(WinAPIException): pass
+class NoSuchDevInst(WinAPIException): pass
 
 codes : dict[int, type[WinAPIException]] = {
     ERROR_INVALID_DATA: InvalidData,
     ERROR_INSUFFICIENT_BUFFER: InsufficientBuffer,
     ERROR_NO_MORE_ITEMS: NoMoreItems,
+    ERROR_NO_SUCH_DEVINST: NoSuchDevInst,
 }
 
 def raise_ex(code : int):

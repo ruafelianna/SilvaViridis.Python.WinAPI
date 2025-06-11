@@ -104,3 +104,13 @@ SetupDiDestroyDeviceInfoList.argtypes = [
     HDEVINFO, # DeviceInfoSet
 ]
 SetupDiDestroyDeviceInfoList.restype = W.BOOL
+
+SetupDiGetDeviceInstanceId = _setupapi.SetupDiGetDeviceInstanceIdW
+SetupDiGetDeviceInstanceId.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+    PSP_DEVINFO_DATA, # DeviceInfoData
+    W.PWCHAR, # DeviceInstanceId
+    W.DWORD, # DeviceInstanceIdSize
+    W.PDWORD, # RequiredSize
+]
+SetupDiGetDeviceInstanceId.restype = W.BOOL

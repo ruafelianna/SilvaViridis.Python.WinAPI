@@ -1,3 +1,5 @@
+import re
+
 from collections.abc import Iterable
 from uuid import UUID
 
@@ -27,6 +29,7 @@ from .SetupAPI import (
     get_device_property,
     get_device_interface,
     get_device_interface_devpath,
+    get_device_instance_id,
     free_device_list,
 )
 from .USBGuids import (
@@ -56,6 +59,7 @@ class USBDeviceManager:
         print(f"Class GUID: {device.class_guid}")
         print(f"Interface Class GUID: {device.interface_class_guid}")
         print(f"Device Path: {device.devpath}")
+        print(f"Device ID: {device.devid}")
 
         if isinstance(device.devinfo, USBDeviceInfo):
             pass
@@ -63,6 +67,10 @@ class USBDeviceManager:
             pass
         elif isinstance(device.devinfo, USBHostControllerInfo):
             print(f"HC Driver Key Name: {device.devinfo.driver_key_name}")
+            print(f"HC Vendor ID: {device.devinfo.vendor_id}")
+            print(f"HC Device ID: {device.devinfo.device_id}")
+            print(f"HC SubSys ID: {device.devinfo.sub_sys_id}")
+            print(f"HC Revision: {device.devinfo.revision}")
         else:
             raise NotImplementedError()
 
@@ -95,6 +103,8 @@ class USBDeviceManager:
 
                 devpath = get_device_interface_devpath(hdevinfo, interfaceinfo)
 
+                devid = get_device_instance_id(hdevinfo, devinfo)
+
                 props : dict[DevProperties, str | int | bytes | None] = {}
 
                 for prop_name in DevProperties if properties is None else properties:
@@ -110,7 +120,7 @@ class USBDeviceManager:
                 elif guid == GUID_DEVINTERFACE_USB_HUB:
                     info = self.get_hub_info()
                 elif guid == GUID_DEVINTERFACE_USB_HOST_CONTROLLER:
-                    info = self.get_hc_info(devpath)
+                    info = self.get_hc_info(devpath, devid)
                 else:
                     raise NotImplementedError()
 
@@ -118,6 +128,7 @@ class USBDeviceManager:
                     class_guid = devinfo.class_guid,
                     interface_class_guid = interfaceinfo.interface_class_guid,
                     devpath = devpath,
+                    devid = devid,
                     props = props,
                     devinfo = info,
                 ))
@@ -138,9 +149,12 @@ class USBDeviceManager:
     ) -> USBHubInfo:
         return USBHubInfo()
 
+    hc_devid_pattern = re.compile(r"^PCI\\VEN_(.+)&DEV_(.+)&SUBSYS_(.+)&REV_(.+)\\.+$")
+
     def get_hc_info(
         self,
         devpath : str,
+        devid : str,
     ) -> USBHostControllerInfo:
         hcfd = create_file(
             devpath,
@@ -154,6 +168,17 @@ class USBDeviceManager:
         finally:
             close_file(hcfd)
 
+        m = self.hc_devid_pattern.match(devid)
+
+        if m is None:
+            raise ValueError("Incorrect HC DeviceID")
+
+        ven, dev, subsys, rev = m.groups()
+
         return USBHostControllerInfo(
             driver_key_name = driver_key_name,
+            vendor_id = ven,
+            device_id = dev,
+            sub_sys_id = subsys,
+            revision = rev,
         )

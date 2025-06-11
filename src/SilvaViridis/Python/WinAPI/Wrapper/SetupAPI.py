@@ -29,6 +29,7 @@ from ..setupapi import (
     SetupDiGetDeviceRegistryProperty,
     SetupDiGetDeviceInterfaceDetail,
     SetupDiDestroyDeviceInfoList,
+    SetupDiGetDeviceInstanceId,
 )
 
 class IncludedInfoFlags(Flag):
@@ -311,3 +312,47 @@ def free_device_list(
     hdevinfo : C.c_void_p,
 ) -> None:
     SetupDiDestroyDeviceInfoList(hdevinfo)
+
+def get_device_instance_id(
+    hdevinfo : C.c_void_p,
+    devinfo : DevInfoData,
+) -> str:
+    required_length = W.DWORD(0)
+    devinfo_ptr = C.byref(devinfo.to_internal())
+
+    SetupDiGetDeviceInstanceId(
+        hdevinfo,
+        devinfo_ptr,
+        None,
+        0,
+        C.byref(required_length),
+    )
+
+    try:
+        raise_ex(C.GetLastError())
+    except InsufficientBuffer:
+        pass
+
+    devid_ptr = alloc(required_length.value * 2)
+
+    if devid_ptr is None:
+        raise MemAllocError()
+
+    devid_array = C.cast(devid_ptr, C.c_wchar_p)
+
+    success = SetupDiGetDeviceInstanceId(
+        hdevinfo,
+        devinfo_ptr,
+        devid_array,
+        required_length,
+        C.byref(required_length),
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    devid = ptr_to_str(devid_ptr, required_length.value * 2)
+
+    free(devid_ptr)
+
+    return devid
