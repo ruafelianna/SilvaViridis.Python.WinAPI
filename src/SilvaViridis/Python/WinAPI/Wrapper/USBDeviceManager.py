@@ -20,6 +20,7 @@ from .IO import (
 )
 from .IOAPISet import (
     ioctl_get_hcd_driver_key_name,
+    ioctl_get_usb_controller_info,
 )
 from .SetupAPI import (
     IncludedInfoFlags,
@@ -71,6 +72,12 @@ class USBDeviceManager:
             print(f"HC Device ID: {device.devinfo.device_id}")
             print(f"HC SubSys ID: {device.devinfo.sub_sys_id}")
             print(f"HC Revision: {device.devinfo.revision}")
+            print(f"PCI Vendor ID: {device.devinfo.pci_vendor_id}")
+            print(f"PCI Device ID: {device.devinfo.pci_device_id}")
+            print(f"PCI Revision: {device.devinfo.pci_revision}")
+            print(f"Number of Root Ports: {device.devinfo.number_of_root_ports}")
+            print(f"Controller Flavor: {device.devinfo.controller_flavor}")
+            print(f"Features: {device.devinfo.hc_feature_flags}")
         else:
             raise NotImplementedError()
 
@@ -165,6 +172,7 @@ class USBDeviceManager:
 
         try:
             driver_key_name = ioctl_get_hcd_driver_key_name(hcfd)
+            controller_info = ioctl_get_usb_controller_info(hcfd)
         finally:
             close_file(hcfd)
 
@@ -181,4 +189,10 @@ class USBDeviceManager:
             device_id = dev,
             sub_sys_id = subsys,
             revision = rev,
+            pci_vendor_id = controller_info.pci_vendor_id,
+            pci_device_id = controller_info.pci_device_id,
+            pci_revision = controller_info.pci_revision,
+            number_of_root_ports = controller_info.number_of_root_ports,
+            controller_flavor = controller_info.controller_flavor,
+            hc_feature_flags = controller_info.hc_feature_flags,
         )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
+from .IOAPISet import USBControllerFlavor, HCFeatureFlags
 from .SetupAPI import DevProperties
 
 @dataclass
@@ -30,3 +31,9 @@ class USBHostControllerInfo(USBNodeInfo):
     device_id : str
     sub_sys_id : str
     revision : str
+    pci_vendor_id : int
+    pci_device_id : int
+    pci_revision : int
+    number_of_root_ports : int
+    controller_flavor : USBControllerFlavor
+    hc_feature_flags : HCFeatureFlags

@@ -203,10 +203,16 @@ def ctl_code(
         | (function.value << 2) \
         | method.value
 
-class CtlCodes(Enum):
-    IOCTL_GET_HCD_DRIVERKEY_NAME = ctl_code(
+def usb_ctl(
+    func : UserModeIOCTLFunctionCodes,
+) -> int:
+    return ctl_code(
         DeviceType.FILE_DEVICE_USB,
-        UserModeIOCTLFunctionCodes.HCD_GET_DRIVERKEY_NAME,
+        func,
         BufferPassMethods.BUFFERED,
         FileAccess.ANY,
     )
+
+class CtlCodes(Enum):
+    IOCTL_GET_HCD_DRIVERKEY_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_DRIVERKEY_NAME,)
+    IOCTL_USB_USER_REQUEST = usb_ctl(UserModeIOCTLFunctionCodes.HCD_USER_REQUEST)
