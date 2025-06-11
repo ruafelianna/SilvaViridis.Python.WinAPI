@@ -6,6 +6,7 @@ from uuid import UUID
 
 from .Exceptions import (
     NoMoreItems,
+    InvalidData,
 )
 from .IO import (
     create_file,
@@ -110,7 +111,7 @@ class USBDeviceManager:
             raise NotImplementedError()
 
         for prop, value in device.props.items():
-            print(f"{prop.name} [{prop.value}] = {value}")
+            print(f"[{prop.value:02}] {prop.name} = {value}")
 
     def enumerate_devices(
         self,
@@ -146,8 +147,10 @@ class USBDeviceManager:
                     try:
                         prop = get_device_property(hdevinfo, devinfo, prop_name)
                         props[prop_name] = prop
-                    except:
-                        pass
+                    except InvalidData:
+                        props[prop_name] = "N/A"
+                    except Exception as ex:
+                        props[prop_name] = f"Error: {ex}"
 
                 info : USBNodeInfo
                 if guid == USBDevInterfaceGuids.DEVICE:
