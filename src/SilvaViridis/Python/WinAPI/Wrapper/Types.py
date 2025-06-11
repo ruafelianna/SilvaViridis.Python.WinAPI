@@ -217,8 +217,9 @@ def usb_ctl(
     )
 
 class CtlCodes(Enum):
-    GET_HCD_DRIVERKEY_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_DRIVERKEY_NAME,)
+    GET_HCD_DRIVERKEY_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_DRIVERKEY_NAME)
     USB_USER_REQUEST = usb_ctl(UserModeIOCTLFunctionCodes.HCD_USER_REQUEST)
+    USB_GET_ROOT_HUB_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_ROOT_HUB_NAME)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001

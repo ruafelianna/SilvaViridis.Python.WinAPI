@@ -15,6 +15,7 @@ from .IO import (
 from .IOAPISet import (
     ioctl_get_hcd_driver_key_name,
     ioctl_get_usb_controller_info,
+    ioctl_get_root_hub_name,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -58,6 +59,7 @@ class USBHostControllerInfo(USBNodeInfo):
     number_of_root_ports : int
     controller_flavor : USBControllerFlavors
     hc_feature_flags : HCFeatureFlags
+    root_hub_name : str
 
 @dataclass
 class USBNode:
@@ -107,6 +109,7 @@ class USBDeviceManager:
             print(f"Number of Root Ports: {device.devinfo.number_of_root_ports}")
             print(f"Controller Flavor: {device.devinfo.controller_flavor}")
             print(f"Features: {device.devinfo.hc_feature_flags}")
+            print(f"Root Hub Name: {device.devinfo.root_hub_name}")
         else:
             raise NotImplementedError()
 
@@ -204,6 +207,7 @@ class USBDeviceManager:
         try:
             driver_key_name = ioctl_get_hcd_driver_key_name(hcfd)
             controller_info = ioctl_get_usb_controller_info(hcfd)
+            root_hub_name = ioctl_get_root_hub_name(hcfd)
         finally:
             close_file(hcfd)
 
@@ -226,4 +230,5 @@ class USBDeviceManager:
             number_of_root_ports = controller_info.number_of_root_ports,
             controller_flavor = controller_info.controller_flavor,
             hc_feature_flags = controller_info.hc_feature_flags,
+            root_hub_name = root_hub_name,
         )

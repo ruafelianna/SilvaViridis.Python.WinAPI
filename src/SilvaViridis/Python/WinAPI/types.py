@@ -96,6 +96,14 @@ class USB_HCD_DRIVERKEY_NAME(C.Structure):
 
 PUSB_HCD_DRIVERKEY_NAME = C.POINTER(USB_HCD_DRIVERKEY_NAME)
 
+class USB_ROOT_HUB_NAME(C.Structure):
+    _fields_ = [
+        ("ActualLength", W.ULONG),
+        ("RootHubName", W.WCHAR * 1),
+    ]
+
+PUSB_ROOT_HUB_NAME = C.POINTER(USB_ROOT_HUB_NAME)
+
 # usbuser.h
 
 class USBUSER_REQUEST_HEADER(C.Structure):
