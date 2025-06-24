@@ -86,6 +86,22 @@ class SP_DEVICE_INTERFACE_DETAIL_DATA(C.Structure):
 
 PSP_DEVICE_INTERFACE_DETAIL_DATA = C.POINTER(SP_DEVICE_INTERFACE_DETAIL_DATA)
 
+# usbspec.h
+
+class USB_HUB_DESCRIPTOR(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("bDescriptorLength", C.c_ubyte),
+        ("bDescriptorType", C.c_ubyte),
+        ("bNumberOfPorts", C.c_ubyte),
+        ("wHubCharacteristics", W.USHORT),
+        ("bPowerOnToPowerGood", C.c_ubyte),
+        ("bHubControlCurrent", C.c_ubyte),
+        ("bRemoveAndPowerMask", C.c_ubyte * 64),
+    ]
+
+PUSB_HUB_DESCRIPTOR = C.POINTER(USB_HUB_DESCRIPTOR)
+
 # usbioctl.h
 
 class USB_HCD_DRIVERKEY_NAME(C.Structure):
@@ -103,6 +119,35 @@ class USB_ROOT_HUB_NAME(C.Structure):
     ]
 
 PUSB_ROOT_HUB_NAME = C.POINTER(USB_ROOT_HUB_NAME)
+
+class USB_HUB_INFORMATION(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("HubDescriptor", USB_HUB_DESCRIPTOR),
+        ("HubIsBusPowered", W.BOOLEAN),
+    ]
+
+class USB_MI_PARENT_INFORMATION(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("NumberOfInterfaces", W.ULONG),
+    ]
+
+class USB_NODE_INFORMATION_u(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("HubInformation", USB_HUB_INFORMATION),
+        ("MiParentInformation", USB_MI_PARENT_INFORMATION),
+    ]
+
+class USB_NODE_INFORMATION(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("NodeType", C.c_int),
+        ("u", USB_NODE_INFORMATION_u),
+    ]
+
+PUSB_NODE_INFORMATION = C.POINTER(USB_NODE_INFORMATION)
 
 # usbuser.h
 

@@ -220,6 +220,7 @@ class CtlCodes(Enum):
     GET_HCD_DRIVERKEY_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_DRIVERKEY_NAME)
     USB_USER_REQUEST = usb_ctl(UserModeIOCTLFunctionCodes.HCD_USER_REQUEST)
     USB_GET_ROOT_HUB_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_ROOT_HUB_NAME)
+    USB_GET_NODE_INFORMATION = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_INFORMATION)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -418,3 +419,20 @@ class DevInterfaceData:
             flags = DevInterfaceFlags(data.Flags),
             reserved = data.Reserved,
         )
+
+class USBHubNodeTypes(Enum):
+    UsbHub = 0
+    UsbMIParent = 1
+
+@dataclass
+class USBHubNodeInformation:
+    is_bus_powered : bool
+    number_of_ports : int
+    hub_characteristics : int
+    power_on_to_power_good : int
+    hub_control_current : int
+    remove_and_power_mask : list[int]
+
+@dataclass
+class USBMIParentNodeInformation:
+    number_of_interfaces : int

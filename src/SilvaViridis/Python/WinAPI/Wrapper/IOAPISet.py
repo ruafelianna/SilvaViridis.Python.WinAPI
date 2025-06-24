@@ -10,6 +10,9 @@ from .Types import (
     ControllerInfo,
     USBControllerFlavors,
     HCFeatureFlags,
+    USBHubNodeInformation,
+    USBMIParentNodeInformation,
+    USBHubNodeTypes,
 )
 from .Utils import ptr_to_str
 
@@ -20,11 +23,12 @@ from ..types import (
     USBUSER_CONTROLLER_INFO_0,
     USB_HCD_DRIVERKEY_NAME,
     USB_ROOT_HUB_NAME,
+    USB_NODE_INFORMATION,
 )
 
 def ioctl_get_hcd_driver_key_name(
     fd : W.HANDLE,
-):
+) -> str:
     driver_key_name = USB_HCD_DRIVERKEY_NAME()
     nBytes = W.ULONG(0)
 
@@ -76,7 +80,7 @@ def ioctl_get_hcd_driver_key_name(
 
 def ioctl_get_usb_controller_info(
     fd : W.HANDLE,
-):
+) -> ControllerInfo:
     controller_info = USBUSER_CONTROLLER_INFO_0()
     controller_info.Header.UsbUserRequest = USBUserRequestCodes.GET_CONTROLLER_INFO_0.value
     controller_info.Header.RequestBufferLength = C.sizeof(controller_info)
@@ -156,3 +160,41 @@ def ioctl_get_root_hub_name(
     free(root_hub_name_ptr)
 
     return root_hub_name
+
+def ioctl_get_usb_node_info(
+    fd : W.HANDLE,
+) -> USBHubNodeInformation | USBMIParentNodeInformation:
+    node_info = USB_NODE_INFORMATION()
+    nBytes = W.DWORD(0)
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_NODE_INFORMATION.value,
+        C.byref(node_info),
+        C.sizeof(USB_NODE_INFORMATION),
+        C.byref(node_info),
+        C.sizeof(USB_NODE_INFORMATION),
+        C.byref(nBytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    if node_info.NodeType == USBHubNodeTypes.UsbHub.value:
+        hub_info = node_info.u.HubInformation
+        return USBHubNodeInformation(
+            is_bus_powered = bool(hub_info.HubIsBusPowered),
+            number_of_ports = hub_info.HubDescriptor.bNumberOfPorts,
+            hub_characteristics = hub_info.HubDescriptor.wHubCharacteristics,
+            power_on_to_power_good = hub_info.HubDescriptor.bPowerOnToPowerGood,
+            hub_control_current = hub_info.HubDescriptor.bHubControlCurrent,
+            remove_and_power_mask = list(hub_info.HubDescriptor.bRemoveAndPowerMask),
+        )
+    elif node_info.NodeType == USBHubNodeTypes.UsbMIParent.value:
+        mi_info = node_info.u.MiParentInformation
+        return USBMIParentNodeInformation(
+            number_of_interfaces = mi_info.NumberOfInterfaces,
+        )
+    else:
+        raise NotImplementedError()

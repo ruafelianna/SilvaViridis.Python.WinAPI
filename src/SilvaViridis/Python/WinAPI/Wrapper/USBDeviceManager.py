@@ -16,6 +16,7 @@ from .IOAPISet import (
     ioctl_get_hcd_driver_key_name,
     ioctl_get_usb_controller_info,
     ioctl_get_root_hub_name,
+    ioctl_get_usb_node_info,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -35,6 +36,7 @@ from .Types import (
     USBDevInterfaceGuids,
     IncludedInfoFlags,
     DevProperties,
+    USBHubNodeInformation,
 )
 
 class USBNodeInfo:
@@ -43,8 +45,14 @@ class USBNodeInfo:
 class USBDeviceInfo(USBNodeInfo):
     pass
 
+@dataclass
 class USBHubInfo(USBNodeInfo):
-    pass
+    is_bus_powered : bool
+    number_of_ports : int
+    hub_characteristics : int
+    power_on_to_power_good : int
+    hub_control_current : int
+    remove_and_power_mask : list[int]
 
 @dataclass
 class USBHostControllerInfo(USBNodeInfo):
@@ -96,7 +104,12 @@ class USBDeviceManager:
         if isinstance(device.devinfo, USBDeviceInfo):
             pass
         elif isinstance(device.devinfo, USBHubInfo):
-            pass
+            print(f"Is Bus Powered: {device.devinfo.is_bus_powered}")
+            print(f"Number of Ports: {device.devinfo.number_of_ports}")
+            print(f"Hub Characteristics: {device.devinfo.hub_characteristics}")
+            print(f"Power On to Power Good: {device.devinfo.power_on_to_power_good}")
+            print(f"Hub Control Current: {device.devinfo.hub_control_current}")
+            print(f"Remove And Power Mask: {device.devinfo.remove_and_power_mask}")
         elif isinstance(device.devinfo, USBHostControllerInfo):
             print(f"HC Driver Key Name: {device.devinfo.driver_key_name}")
             print(f"HC Vendor ID: {device.devinfo.vendor_id}")
@@ -159,7 +172,7 @@ class USBDeviceManager:
                 if guid == USBDevInterfaceGuids.DEVICE:
                     info = self.get_device_info()
                 elif guid == USBDevInterfaceGuids.HUB:
-                    info = self.get_hub_info()
+                    info = self.get_hub_info(devpath)
                 elif guid == USBDevInterfaceGuids.HOST_CONTROLLER:
                     info = self.get_hc_info(devpath, devid)
                 else:
@@ -187,8 +200,30 @@ class USBDeviceManager:
 
     def get_hub_info(
         self,
+        devpath : str,
     ) -> USBHubInfo:
-        return USBHubInfo()
+        hubfd = create_file(
+            devpath,
+            GenericRights.WRITE,
+            ShareModes.WRITE,
+            CreationModes.OPEN_EXISTING,
+        )
+        try:
+            node_info = ioctl_get_usb_node_info(hubfd)
+        finally:
+            close_file(hubfd)
+
+        if not isinstance(node_info, USBHubNodeInformation):
+            raise ValueError("The USB node is not a hub")
+
+        return USBHubInfo(
+            is_bus_powered = node_info.is_bus_powered,
+            number_of_ports = node_info.number_of_ports,
+            hub_characteristics = node_info.hub_characteristics,
+            power_on_to_power_good = node_info.power_on_to_power_good,
+            hub_control_current = node_info.hub_control_current,
+            remove_and_power_mask = node_info.remove_and_power_mask,
+        )
 
     hc_devid_pattern = re.compile(r"^PCI\\VEN_(.+)&DEV_(.+)&SUBSYS_(.+)&REV_(.+)\\.+$")
 
