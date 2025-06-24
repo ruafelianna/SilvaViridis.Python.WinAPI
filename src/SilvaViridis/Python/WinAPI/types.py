@@ -182,6 +182,34 @@ class USB_HUB_INFORMATION_EX(C.Structure):
 
 PUSB_HUB_INFORMATION_EX = C.POINTER(USB_HUB_INFORMATION_EX)
 
+class USB_HUB_CAP_FLAGS_BITS(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("HubIsHighSpeedCapable", W.ULONG, 1),
+        ("HubIsHighSpeed", W.ULONG, 1),
+        ("HubIsMultiTtCapable", W.ULONG, 1),
+        ("HubIsMultiTt", W.ULONG, 1),
+        ("HubIsRoot", W.ULONG, 1),
+        ("HubIsArmedWakeOnConnect", W.ULONG, 1),
+        ("HubIsBusPowered", W.ULONG, 1),
+        ("ReservedMBZ", W.ULONG, 25),
+    ]
+
+class USB_HUB_CAP_FLAGS(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("ul", W.ULONG),
+        ("bits", USB_HUB_CAP_FLAGS_BITS),
+    ]
+
+class USB_HUB_CAPABILITIES_EX(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("CapabilityFlags", USB_HUB_CAP_FLAGS),
+    ]
+
+PUSB_HUB_CAPABILITIES_EX = C.POINTER(USB_HUB_CAPABILITIES_EX)
+
 # usbuser.h
 
 class USBUSER_REQUEST_HEADER(C.Structure):

@@ -16,6 +16,7 @@ from .Types import (
     USBHubTypes,
     USBHubInformation,
     USB30HubInformation,
+    USBHubCapabilities,
 )
 from .Utils import ptr_to_str
 
@@ -28,6 +29,7 @@ from ..types import (
     USB_ROOT_HUB_NAME,
     USB_NODE_INFORMATION,
     USB_HUB_INFORMATION_EX,
+    USB_HUB_CAPABILITIES_EX,
 )
 
 def ioctl_get_hcd_driver_key_name(
@@ -247,3 +249,33 @@ def ioctl_get_usb_hub_extra_info(
         )
     else:
         raise NotImplementedError()
+
+def ioctl_get_usb_hub_capabilities_ex(
+    fd : W.HANDLE,
+) -> USBHubCapabilities:
+    capabilities = USB_HUB_CAPABILITIES_EX()
+    nBytes = W.DWORD(0)
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_HUB_CAPABILITIES_EX.value,
+        C.byref(capabilities),
+        C.sizeof(USB_HUB_INFORMATION_EX),
+        C.byref(capabilities),
+        C.sizeof(USB_HUB_INFORMATION_EX),
+        C.byref(nBytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    return USBHubCapabilities(
+        is_high_speed_capable = bool(capabilities.CapabilityFlags.bits.HubIsHighSpeedCapable),
+        is_high_speed = bool(capabilities.CapabilityFlags.bits.HubIsHighSpeed),
+        is_multi_tt_capable = bool(capabilities.CapabilityFlags.bits.HubIsMultiTtCapable),
+        is_multi_tt = bool(capabilities.CapabilityFlags.bits.HubIsMultiTt),
+        is_root = bool(capabilities.CapabilityFlags.bits.HubIsRoot),
+        is_armed_wake_on_connect = bool(capabilities.CapabilityFlags.bits.HubIsArmedWakeOnConnect),
+        is_bus_powered = bool(capabilities.CapabilityFlags.bits.HubIsBusPowered),
+    )

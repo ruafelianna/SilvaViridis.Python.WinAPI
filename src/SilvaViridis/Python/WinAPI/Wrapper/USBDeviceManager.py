@@ -18,6 +18,7 @@ from .IOAPISet import (
     ioctl_get_root_hub_name,
     ioctl_get_usb_node_info,
     ioctl_get_usb_hub_extra_info,
+    ioctl_get_usb_hub_capabilities_ex,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -49,6 +50,12 @@ class USBDeviceInfo(USBNodeInfo):
 
 @dataclass
 class USBHubInfo(USBNodeInfo):
+    is_high_speed_capable : bool
+    is_high_speed : bool
+    is_multi_tt_capable : bool
+    is_multi_tt : bool
+    is_root : bool
+    is_armed_wake_on_connect : bool
     is_bus_powered : bool
     number_of_ports : int
     hub_characteristics : int
@@ -110,6 +117,12 @@ class USBDeviceManager:
         if isinstance(device.devinfo, USBDeviceInfo):
             pass
         elif isinstance(device.devinfo, USBHubInfo):
+            print(f"Is High Speed Capable: {device.devinfo.is_high_speed_capable}")
+            print(f"Is High Speed: {device.devinfo.is_high_speed}")
+            print(f"Is Multi Transaction Translations Capable: {device.devinfo.is_multi_tt_capable}")
+            print(f"Is Multi Transaction Translations: {device.devinfo.is_multi_tt}")
+            print(f"Is Root: {device.devinfo.is_root}")
+            print(f"Is Armed Wake On Connect: {device.devinfo.is_armed_wake_on_connect}")
             print(f"Is Bus Powered: {device.devinfo.is_bus_powered}")
             print(f"Number of Ports: {device.devinfo.number_of_ports}")
             print(f"Hub Characteristics: {device.devinfo.hub_characteristics}")
@@ -221,6 +234,7 @@ class USBDeviceManager:
         try:
             node_info = ioctl_get_usb_node_info(hubfd)
             hub_info = ioctl_get_usb_hub_extra_info(hubfd)
+            capabilities = ioctl_get_usb_hub_capabilities_ex(hubfd)
         finally:
             close_file(hubfd)
 
@@ -228,6 +242,12 @@ class USBDeviceManager:
             raise ValueError("The USB node is not a hub")
 
         result = USBHubInfo(
+            is_high_speed_capable = capabilities.is_high_speed_capable,
+            is_high_speed = capabilities.is_high_speed,
+            is_multi_tt_capable = capabilities.is_multi_tt_capable,
+            is_multi_tt = capabilities.is_multi_tt,
+            is_root = capabilities.is_root,
+            is_armed_wake_on_connect = capabilities.is_armed_wake_on_connect,
             is_bus_powered = node_info.is_bus_powered,
             number_of_ports = node_info.number_of_ports,
             hub_characteristics = node_info.hub_characteristics,

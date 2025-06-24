@@ -222,6 +222,7 @@ class CtlCodes(Enum):
     USB_GET_ROOT_HUB_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_ROOT_HUB_NAME)
     USB_GET_NODE_INFORMATION = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_INFORMATION)
     USB_GET_HUB_INFORMATION_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_INFORMATION_EX)
+    USB_GET_HUB_CAPABILITIES_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_CAPABILITIES_EX)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -462,3 +463,13 @@ class USB30HubInformation:
     hub_packet_header_decode_latency : int
     hub_delay : int
     device_removable : int
+
+@dataclass
+class USBHubCapabilities:
+    is_high_speed_capable : bool
+    is_high_speed : bool
+    is_multi_tt_capable : bool
+    is_multi_tt : bool
+    is_root : bool
+    is_armed_wake_on_connect : bool
+    is_bus_powered : bool
