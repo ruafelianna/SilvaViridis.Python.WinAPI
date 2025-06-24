@@ -17,6 +17,7 @@ from .IOAPISet import (
     ioctl_get_usb_controller_info,
     ioctl_get_root_hub_name,
     ioctl_get_usb_node_info,
+    ioctl_get_usb_hub_extra_info,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -37,6 +38,7 @@ from .Types import (
     IncludedInfoFlags,
     DevProperties,
     USBHubNodeInformation,
+    USB30HubInformation,
 )
 
 class USBNodeInfo:
@@ -53,6 +55,10 @@ class USBHubInfo(USBNodeInfo):
     power_on_to_power_good : int
     hub_control_current : int
     remove_and_power_mask : list[int]
+    highest_port_number : int
+    hub_packet_header_decode_latency : int | None = None
+    hub_delay : int | None = None
+    device_removable : int | None = None
 
 @dataclass
 class USBHostControllerInfo(USBNodeInfo):
@@ -110,6 +116,10 @@ class USBDeviceManager:
             print(f"Power On to Power Good: {device.devinfo.power_on_to_power_good}")
             print(f"Hub Control Current: {device.devinfo.hub_control_current}")
             print(f"Remove And Power Mask: {device.devinfo.remove_and_power_mask}")
+            print(f"Highest Port Number: {device.devinfo.highest_port_number}")
+            print(f"Packet Header Decode Latency: {device.devinfo.hub_packet_header_decode_latency}")
+            print(f"Hub Delay: {device.devinfo.hub_delay}")
+            print(f"Device Removable: {device.devinfo.device_removable}")
         elif isinstance(device.devinfo, USBHostControllerInfo):
             print(f"HC Driver Key Name: {device.devinfo.driver_key_name}")
             print(f"HC Vendor ID: {device.devinfo.vendor_id}")
@@ -210,20 +220,29 @@ class USBDeviceManager:
         )
         try:
             node_info = ioctl_get_usb_node_info(hubfd)
+            hub_info = ioctl_get_usb_hub_extra_info(hubfd)
         finally:
             close_file(hubfd)
 
         if not isinstance(node_info, USBHubNodeInformation):
             raise ValueError("The USB node is not a hub")
 
-        return USBHubInfo(
+        result = USBHubInfo(
             is_bus_powered = node_info.is_bus_powered,
             number_of_ports = node_info.number_of_ports,
             hub_characteristics = node_info.hub_characteristics,
             power_on_to_power_good = node_info.power_on_to_power_good,
             hub_control_current = node_info.hub_control_current,
             remove_and_power_mask = node_info.remove_and_power_mask,
+            highest_port_number = hub_info.highest_port_number
         )
+
+        if isinstance(hub_info, USB30HubInformation):
+            result.hub_packet_header_decode_latency = hub_info.hub_packet_header_decode_latency
+            result.hub_delay = hub_info.hub_delay
+            result.device_removable = hub_info.device_removable
+
+        return result
 
     hc_devid_pattern = re.compile(r"^PCI\\VEN_(.+)&DEV_(.+)&SUBSYS_(.+)&REV_(.+)\\.+$")
 

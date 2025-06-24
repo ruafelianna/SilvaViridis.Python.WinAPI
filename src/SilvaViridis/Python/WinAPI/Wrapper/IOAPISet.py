@@ -13,6 +13,9 @@ from .Types import (
     USBHubNodeInformation,
     USBMIParentNodeInformation,
     USBHubNodeTypes,
+    USBHubTypes,
+    USBHubInformation,
+    USB30HubInformation,
 )
 from .Utils import ptr_to_str
 
@@ -24,6 +27,7 @@ from ..types import (
     USB_HCD_DRIVERKEY_NAME,
     USB_ROOT_HUB_NAME,
     USB_NODE_INFORMATION,
+    USB_HUB_INFORMATION_EX,
 )
 
 def ioctl_get_hcd_driver_key_name(
@@ -195,6 +199,51 @@ def ioctl_get_usb_node_info(
         mi_info = node_info.u.MiParentInformation
         return USBMIParentNodeInformation(
             number_of_interfaces = mi_info.NumberOfInterfaces,
+        )
+    else:
+        raise NotImplementedError()
+
+def ioctl_get_usb_hub_extra_info(
+    fd : W.HANDLE,
+) -> USBHubInformation | USB30HubInformation:
+    hub_descriptor = USB_HUB_INFORMATION_EX()
+    nBytes = W.DWORD(0)
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_HUB_INFORMATION_EX.value,
+        C.byref(hub_descriptor),
+        C.sizeof(USB_HUB_INFORMATION_EX),
+        C.byref(hub_descriptor),
+        C.sizeof(USB_HUB_INFORMATION_EX),
+        C.byref(nBytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    if hub_descriptor.HubType == USBHubTypes.Usb30Hub.value:
+        hub_info = hub_descriptor.u.Usb30HubDescriptor
+        return USB30HubInformation(
+            highest_port_number = hub_descriptor.HighestPortNumber,
+            number_of_ports = hub_info.bNumberOfPorts,
+            hub_characteristics = hub_info.wHubCharacteristics,
+            power_on_to_power_good = hub_info.bPowerOnToPowerGood,
+            hub_control_current = hub_info.bHubControlCurrent,
+            hub_packet_header_decode_latency = hub_info.bHubHdrDecLat,
+            hub_delay = hub_info.wHubDelay,
+            device_removable = hub_info.DeviceRemovable,
+        )
+    elif hub_descriptor.HubType in [USBHubTypes.UsbRootHub.value, USBHubTypes.Usb20Hub.value]:
+        hub_info = hub_descriptor.u.UsbHubDescriptor
+        return USBHubInformation(
+            highest_port_number = hub_descriptor.HighestPortNumber,
+            number_of_ports = hub_info.bNumberOfPorts,
+            hub_characteristics = hub_info.wHubCharacteristics,
+            power_on_to_power_good = hub_info.bPowerOnToPowerGood,
+            hub_control_current = hub_info.bHubControlCurrent,
+            remove_and_power_mask = list(hub_info.bRemoveAndPowerMask),
         )
     else:
         raise NotImplementedError()

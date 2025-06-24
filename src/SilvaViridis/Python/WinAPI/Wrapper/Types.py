@@ -221,6 +221,7 @@ class CtlCodes(Enum):
     USB_USER_REQUEST = usb_ctl(UserModeIOCTLFunctionCodes.HCD_USER_REQUEST)
     USB_GET_ROOT_HUB_NAME = usb_ctl(UserModeIOCTLFunctionCodes.HCD_GET_ROOT_HUB_NAME)
     USB_GET_NODE_INFORMATION = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_INFORMATION)
+    USB_GET_HUB_INFORMATION_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_INFORMATION_EX)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -436,3 +437,28 @@ class USBHubNodeInformation:
 @dataclass
 class USBMIParentNodeInformation:
     number_of_interfaces : int
+
+class USBHubTypes(Enum):
+    UsbRootHub = 1
+    Usb20Hub = 2
+    Usb30Hub = 3
+
+@dataclass
+class USBHubInformation:
+    highest_port_number : int
+    number_of_ports : int
+    hub_characteristics : int
+    power_on_to_power_good : int
+    hub_control_current : int
+    remove_and_power_mask : list[int]
+
+@dataclass
+class USB30HubInformation:
+    highest_port_number : int
+    number_of_ports : int
+    hub_characteristics : int
+    power_on_to_power_good : int
+    hub_control_current : int
+    hub_packet_header_decode_latency : int
+    hub_delay : int
+    device_removable : int

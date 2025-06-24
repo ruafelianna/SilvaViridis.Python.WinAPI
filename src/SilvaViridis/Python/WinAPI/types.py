@@ -102,6 +102,22 @@ class USB_HUB_DESCRIPTOR(C.Structure):
 
 PUSB_HUB_DESCRIPTOR = C.POINTER(USB_HUB_DESCRIPTOR)
 
+class USB_30_HUB_DESCRIPTOR(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("bLength", C.c_ubyte),
+        ("bDescriptorType", C.c_ubyte),
+        ("bNumberOfPorts", C.c_ubyte),
+        ("wHubCharacteristics", W.USHORT),
+        ("bPowerOnToPowerGood", C.c_ubyte),
+        ("bHubControlCurrent", C.c_ubyte),
+        ("bHubHdrDecLat", C.c_ubyte),
+        ("wHubDelay", W.USHORT),
+        ("DeviceRemovable", W.USHORT),
+    ]
+
+PUSB_30_HUB_DESCRIPTOR = C.POINTER(USB_30_HUB_DESCRIPTOR)
+
 # usbioctl.h
 
 class USB_HCD_DRIVERKEY_NAME(C.Structure):
@@ -148,6 +164,23 @@ class USB_NODE_INFORMATION(C.Structure):
     ]
 
 PUSB_NODE_INFORMATION = C.POINTER(USB_NODE_INFORMATION)
+
+class USB_HUB_INFORMATION_EX_u(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("UsbHubDescriptor", USB_HUB_DESCRIPTOR),
+        ("Usb30HubDescriptor", USB_30_HUB_DESCRIPTOR),
+    ]
+
+class USB_HUB_INFORMATION_EX(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("HubType", C.c_int),
+        ("HighestPortNumber", W.USHORT),
+        ("u", USB_HUB_INFORMATION_EX_u),
+    ]
+
+PUSB_HUB_INFORMATION_EX = C.POINTER(USB_HUB_INFORMATION_EX)
 
 # usbuser.h
 
