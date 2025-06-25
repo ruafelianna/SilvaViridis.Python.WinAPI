@@ -17,6 +17,7 @@ from .Types import (
     USBHubInformation,
     USB30HubInformation,
     USBHubCapabilities,
+    USBConnectorProps,
 )
 from .Utils import ptr_to_str
 
@@ -30,6 +31,9 @@ from ..types import (
     USB_NODE_INFORMATION,
     USB_HUB_INFORMATION_EX,
     USB_HUB_CAPABILITIES_EX,
+    USB_PORT_CONNECTOR_PROPERTIES,
+    USB_PORT_PROPERTIES,
+    PUSB_PORT_CONNECTOR_PROPERTIES,
 )
 
 def ioctl_get_hcd_driver_key_name(
@@ -279,3 +283,70 @@ def ioctl_get_usb_hub_capabilities_ex(
         is_armed_wake_on_connect = bool(capabilities.CapabilityFlags.bits.HubIsArmedWakeOnConnect),
         is_bus_powered = bool(capabilities.CapabilityFlags.bits.HubIsBusPowered),
     )
+
+def ioctl_get_usb_port_connector_props(
+    fd : W.HANDLE,
+    connection_index : int,
+) -> USBConnectorProps:
+    props = USB_PORT_CONNECTOR_PROPERTIES()
+    nBytes = W.DWORD(0)
+
+    props.ConnectionIndex = connection_index + 1
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_PORT_CONNECTOR_PROPERTIES.value,
+        C.byref(props),
+        C.sizeof(props),
+        C.byref(props),
+        C.sizeof(props),
+        C.byref(nBytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    nBytes = props.ActualLength
+
+    props_ptr = alloc(nBytes)
+
+    if props_ptr is None:
+        raise MemAllocError()
+
+    p = C.cast(props_ptr, PUSB_PORT_CONNECTOR_PROPERTIES)[0]
+    p.ConnectionIndex = connection_index + 1
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_PORT_CONNECTOR_PROPERTIES.value,
+        props_ptr,
+        nBytes,
+        props_ptr,
+        nBytes,
+        None,
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    not_str_len = C.sizeof(W.ULONG) * 2 + C.sizeof(W.USHORT) * 2 + C.sizeof(USB_PORT_PROPERTIES)
+
+    result = USBConnectorProps(
+        connection_index = props.ConnectionIndex,
+        companion_index = props.CompanionIndex,
+        companion_port_number = props.CompanionPortNumber,
+        companion_hub_symlink = ptr_to_str(
+            int(props_ptr) + not_str_len,
+            nBytes - not_str_len,
+        ),
+        port_is_user_connectable = bool(props.UsbPortProperties.bits.PortIsUserConnectable),
+        port_is_debug_capable = bool(props.UsbPortProperties.bits.PortIsDebugCapable),
+        port_has_multiple_companions = bool(props.UsbPortProperties.bits.PortHasMultipleCompanions),
+        port_connector_is_type_c = bool(props.UsbPortProperties.bits.PortConnectorIsTypeC),
+    )
+
+    free(props_ptr)
+
+    return result

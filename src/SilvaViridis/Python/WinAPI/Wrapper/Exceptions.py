@@ -1,4 +1,5 @@
 ERROR_INVALID_DATA = 13
+ERROR_INVALID_PARAMETER = 87
 ERROR_INSUFFICIENT_BUFFER = 122
 ERROR_NO_MORE_ITEMS = 259
 
@@ -27,6 +28,7 @@ class WinAPIException(Exception):
 class UnknownException(WinAPIException): pass
 
 class InvalidData(WinAPIException): pass
+class InvalidParameter(WinAPIException): pass
 class InsufficientBuffer(WinAPIException): pass
 class NoMoreItems(WinAPIException): pass
 class InvalidRegProperty(WinAPIException): pass
@@ -35,6 +37,7 @@ class InvalidClassInstaller(WinAPIException): pass
 
 codes : dict[int, type[WinAPIException]] = {
     ERROR_INVALID_DATA: InvalidData,
+    ERROR_INVALID_PARAMETER : InvalidParameter,
     ERROR_INSUFFICIENT_BUFFER: InsufficientBuffer,
     ERROR_NO_MORE_ITEMS: NoMoreItems,
     ERROR_INVALID_REG_PROPERTY: InvalidRegProperty,

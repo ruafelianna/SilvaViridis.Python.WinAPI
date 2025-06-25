@@ -19,6 +19,7 @@ from .IOAPISet import (
     ioctl_get_usb_node_info,
     ioctl_get_usb_hub_extra_info,
     ioctl_get_usb_hub_capabilities_ex,
+    ioctl_get_usb_port_connector_props,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -49,7 +50,19 @@ class USBDeviceInfo(USBNodeInfo):
     pass
 
 @dataclass
+class USBPortInfo:
+    index : int
+    companion_index : int
+    companion_port : int
+    companion_name : str
+    is_user_connectable : bool
+    is_debug_capable : bool
+    has_multiple_companions : bool
+    is_type_c : bool
+
+@dataclass
 class USBHubInfo(USBNodeInfo):
+    ports : list[USBPortInfo]
     is_high_speed_capable : bool
     is_high_speed : bool
     is_multi_tt_capable : bool
@@ -233,15 +246,34 @@ class USBDeviceManager:
         )
         try:
             node_info = ioctl_get_usb_node_info(hubfd)
+
+            if not isinstance(node_info, USBHubNodeInformation):
+                raise ValueError("The USB node is not a hub")
+
             hub_info = ioctl_get_usb_hub_extra_info(hubfd)
             capabilities = ioctl_get_usb_hub_capabilities_ex(hubfd)
+
+            ports : list[USBPortInfo] = []
+
+            for i in range(node_info.number_of_ports):
+                connector_props = ioctl_get_usb_port_connector_props(hubfd, i)
+
+                ports.append(USBPortInfo(
+                    index = connector_props.connection_index,
+                    companion_index = connector_props.companion_index,
+                    companion_port = connector_props.companion_port_number,
+                    companion_name = connector_props.companion_hub_symlink,
+                    is_user_connectable = connector_props.port_is_user_connectable,
+                    is_debug_capable = connector_props.port_is_debug_capable,
+                    has_multiple_companions = connector_props.port_has_multiple_companions,
+                    is_type_c = connector_props.port_connector_is_type_c,
+                ))
+
         finally:
             close_file(hubfd)
 
-        if not isinstance(node_info, USBHubNodeInformation):
-            raise ValueError("The USB node is not a hub")
-
         result = USBHubInfo(
+            ports = ports,
             is_high_speed_capable = capabilities.is_high_speed_capable,
             is_high_speed = capabilities.is_high_speed,
             is_multi_tt_capable = capabilities.is_multi_tt_capable,

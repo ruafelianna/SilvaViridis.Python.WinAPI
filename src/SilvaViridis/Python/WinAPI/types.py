@@ -210,6 +210,36 @@ class USB_HUB_CAPABILITIES_EX(C.Structure):
 
 PUSB_HUB_CAPABILITIES_EX = C.POINTER(USB_HUB_CAPABILITIES_EX)
 
+class USB_PORT_PROPERTIES_BITS(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("PortIsUserConnectable", W.ULONG, 1),
+        ("PortIsDebugCapable", W.ULONG, 1),
+        ("PortHasMultipleCompanions", W.ULONG, 1),
+        ("PortConnectorIsTypeC", W.ULONG, 1),
+        ("ReservedMBZ", W.ULONG, 28),
+    ]
+
+class USB_PORT_PROPERTIES(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("ul", W.ULONG),
+        ("bits", USB_PORT_PROPERTIES_BITS),
+    ]
+
+class USB_PORT_CONNECTOR_PROPERTIES(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("ConnectionIndex", W.ULONG),
+        ("ActualLength", W.ULONG),
+        ("UsbPortProperties", USB_PORT_PROPERTIES),
+        ("CompanionIndex", W.USHORT),
+        ("CompanionPortNumber", W.USHORT),
+        ("CompanionHubSymbolicLinkName", W.WCHAR * 1),
+    ]
+
+PUSB_PORT_CONNECTOR_PROPERTIES = C.POINTER(USB_PORT_CONNECTOR_PROPERTIES)
+
 # usbuser.h
 
 class USBUSER_REQUEST_HEADER(C.Structure):

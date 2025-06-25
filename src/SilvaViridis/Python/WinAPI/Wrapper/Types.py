@@ -223,6 +223,7 @@ class CtlCodes(Enum):
     USB_GET_NODE_INFORMATION = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_INFORMATION)
     USB_GET_HUB_INFORMATION_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_INFORMATION_EX)
     USB_GET_HUB_CAPABILITIES_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_CAPABILITIES_EX)
+    USB_GET_PORT_CONNECTOR_PROPERTIES = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_PORT_CONNECTOR_PROPERTIES)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -473,3 +474,14 @@ class USBHubCapabilities:
     is_root : bool
     is_armed_wake_on_connect : bool
     is_bus_powered : bool
+
+@dataclass
+class USBConnectorProps:
+    connection_index : int
+    companion_index : int
+    companion_port_number : int
+    companion_hub_symlink : str
+    port_is_user_connectable : bool
+    port_is_debug_capable : bool
+    port_has_multiple_companions : bool
+    port_connector_is_type_c : bool
