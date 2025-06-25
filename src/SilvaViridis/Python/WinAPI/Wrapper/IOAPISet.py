@@ -21,6 +21,7 @@ from .Types import (
     USBNodeConnectionInfoExV2,
     USBNodeConnectionInfoEx,
     USBConnectionStatuses,
+    USBDeviceSpeeds,
 )
 from .Utils import ptr_to_str
 
@@ -417,6 +418,7 @@ def ioctl_get_usb_node_connection_info_ex(
 
     return USBNodeConnectionInfoEx(
         connection_index = info.ConnectionIndex,
+        speed = USBDeviceSpeeds(info.Speed),
         device_is_hub = bool(info.DeviceIsHub),
         device_address = info.DeviceAddress,
         connection_status = USBConnectionStatuses(info.ConnectionStatus),

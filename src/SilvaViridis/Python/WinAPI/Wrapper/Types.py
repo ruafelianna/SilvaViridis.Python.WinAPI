@@ -499,6 +499,12 @@ class USBNodeConnectionInfoExV2:
     is_device_operating_at_super_speed_plus_or_higher : bool
     is_device_super_speed_plus_capable_or_higher : bool
 
+class USBDeviceSpeeds(Enum):
+    UsbLowSpeed = 0
+    UsbFullSpeed = 1
+    UsbHighSpeed = 2
+    UsbSuperSpeed = 3
+
 class USBConnectionStatuses(Enum):
     NoDeviceConnected = 0
     DeviceConnected = 1
@@ -516,6 +522,7 @@ class USBConnectionStatuses(Enum):
 @dataclass
 class USBNodeConnectionInfoEx:
     connection_index : int
+    speed : USBDeviceSpeeds
     device_is_hub : bool
     device_address : int
     connection_status : USBConnectionStatuses
