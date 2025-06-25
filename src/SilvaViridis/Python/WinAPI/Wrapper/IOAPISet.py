@@ -19,6 +19,8 @@ from .Types import (
     USBHubCapabilities,
     USBConnectorProps,
     USBNodeConnectionInfoExV2,
+    USBNodeConnectionInfoEx,
+    USBConnectionStatuses,
 )
 from .Utils import ptr_to_str
 
@@ -36,6 +38,7 @@ from ..types import (
     USB_PORT_PROPERTIES,
     PUSB_PORT_CONNECTOR_PROPERTIES,
     USB_NODE_CONNECTION_INFORMATION_EX_V2,
+    USB_NODE_CONNECTION_INFORMATION_EX,
 )
 
 def ioctl_get_hcd_driver_key_name(
@@ -387,4 +390,34 @@ def ioctl_get_usb_node_connection_info_ex_v2(
         is_device_super_speed_capable_or_higher = bool(info.Flags.bits.DeviceIsSuperSpeedCapableOrHigher),
         is_device_operating_at_super_speed_plus_or_higher = bool(info.Flags.bits.DeviceIsOperatingAtSuperSpeedPlusOrHigher),
         is_device_super_speed_plus_capable_or_higher = bool(info.Flags.bits.DeviceIsSuperSpeedPlusCapableOrHigher),
+    )
+
+def ioctl_get_usb_node_connection_info_ex(
+    fd : W.HANDLE,
+    connection_index : int,
+) -> USBNodeConnectionInfoEx:
+    info = USB_NODE_CONNECTION_INFORMATION_EX()
+    nBytes = W.DWORD(0)
+
+    info.ConnectionIndex = connection_index + 1
+
+    success = DeviceIoControl(
+        fd,
+        CtlCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX.value,
+        C.byref(info),
+        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX),
+        C.byref(info),
+        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX),
+        C.byref(nBytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    return USBNodeConnectionInfoEx(
+        connection_index = info.ConnectionIndex,
+        device_is_hub = bool(info.DeviceIsHub),
+        device_address = info.DeviceAddress,
+        connection_status = USBConnectionStatuses(info.ConnectionStatus),
     )

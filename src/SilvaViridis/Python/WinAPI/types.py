@@ -118,6 +118,38 @@ class USB_30_HUB_DESCRIPTOR(C.Structure):
 
 PUSB_30_HUB_DESCRIPTOR = C.POINTER(USB_30_HUB_DESCRIPTOR)
 
+class USB_DEVICE_DESCRIPTOR(C.Structure):
+    _fields_ = [
+        ("bLength", C.c_ubyte),
+        ("bDescriptorType", C.c_ubyte),
+        ("bcdUSB", W.USHORT),
+        ("bDeviceClass", C.c_ubyte),
+        ("bDeviceSubClass", C.c_ubyte),
+        ("bDeviceProtocol", C.c_ubyte),
+        ("bMaxPacketSize0", C.c_ubyte),
+        ("idVendor", W.USHORT),
+        ("idProduct", W.USHORT),
+        ("bcdDevice", W.USHORT),
+        ("iManufacturer", C.c_ubyte),
+        ("iProduct", C.c_ubyte),
+        ("iSerialNumber", C.c_ubyte),
+        ("bNumConfigurations", C.c_ubyte),
+    ]
+
+PUSB_DEVICE_DESCRIPTOR = C.POINTER(USB_DEVICE_DESCRIPTOR)
+
+class USB_ENDPOINT_DESCRIPTOR(C.Structure):
+    _fields_ = [
+        ("bLength", C.c_ubyte),
+        ("bDescriptorType", C.c_ubyte),
+        ("bEndpointAddress", C.c_ubyte),
+        ("bmAttributes", C.c_ubyte),
+        ("wMaxPacketSize", W.USHORT),
+        ("bInterval", C.c_ubyte),
+    ]
+
+PUSB_ENDPOINT_DESCRIPTOR = C.POINTER(USB_ENDPOINT_DESCRIPTOR)
+
 # usbioctl.h
 
 class USB_HCD_DRIVERKEY_NAME(C.Structure):
@@ -283,6 +315,29 @@ class USB_NODE_CONNECTION_INFORMATION_EX_V2(C.Structure):
     ]
 
 PUSB_NODE_CONNECTION_INFORMATION_EX_V2 = C.POINTER(USB_NODE_CONNECTION_INFORMATION_EX_V2)
+
+class USB_PIPE_INFO(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("EndpointDescriptor", USB_ENDPOINT_DESCRIPTOR),
+        ("ScheduleOffset", W.ULONG),
+    ]
+
+class USB_NODE_CONNECTION_INFORMATION_EX(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("ConnectionIndex", W.ULONG),
+        ("DeviceDescriptor", USB_DEVICE_DESCRIPTOR),
+        ("CurrentConfigurationValue", C.c_ubyte),
+        ("Speed", C.c_ubyte),
+        ("DeviceIsHub", W.BOOLEAN),
+        ("DeviceAddress", W.USHORT),
+        ("NumberOfOpenPipes", W.ULONG),
+        ("ConnectionStatus", C.c_int),
+        ("PipeList", USB_PIPE_INFO * 30),
+    ]
+
+PUSB_NODE_CONNECTION_INFORMATION_EX = C.POINTER(USB_NODE_CONNECTION_INFORMATION_EX)
 
 # usbuser.h
 

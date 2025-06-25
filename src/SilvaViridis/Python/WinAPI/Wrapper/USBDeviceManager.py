@@ -21,6 +21,7 @@ from .IOAPISet import (
     ioctl_get_usb_hub_capabilities_ex,
     ioctl_get_usb_port_connector_props,
     ioctl_get_usb_node_connection_info_ex_v2,
+    ioctl_get_usb_node_connection_info_ex,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -42,6 +43,7 @@ from .Types import (
     DevProperties,
     USBHubNodeInformation,
     USB30HubInformation,
+    USBConnectionStatuses,
 )
 
 class USBNodeInfo:
@@ -67,6 +69,9 @@ class USBPortInfo:
     is_device_super_speed_capable_or_higher : bool
     is_device_operating_at_super_speed_plus_or_higher : bool
     is_device_super_speed_plus_capable_or_higher : bool
+    device_is_hub : bool
+    device_address : int
+    connection_status : USBConnectionStatuses
 
 @dataclass
 class USBHubInfo(USBNodeInfo):
@@ -266,6 +271,7 @@ class USBDeviceManager:
             for i in range(node_info.number_of_ports):
                 connector_props = ioctl_get_usb_port_connector_props(hubfd, i)
                 connection_info_2 = ioctl_get_usb_node_connection_info_ex_v2(hubfd, i)
+                connection_info = ioctl_get_usb_node_connection_info_ex(hubfd, i)
 
                 ports.append(USBPortInfo(
                     index = connector_props.connection_index,
@@ -283,6 +289,9 @@ class USBDeviceManager:
                     is_device_super_speed_capable_or_higher = connection_info_2.is_device_super_speed_capable_or_higher,
                     is_device_operating_at_super_speed_plus_or_higher = connection_info_2.is_device_operating_at_super_speed_plus_or_higher,
                     is_device_super_speed_plus_capable_or_higher = connection_info_2.is_device_super_speed_plus_capable_or_higher,
+                    device_is_hub = connection_info.device_is_hub,
+                    device_address = connection_info.device_address,
+                    connection_status = connection_info.connection_status,
                 ))
 
         finally:

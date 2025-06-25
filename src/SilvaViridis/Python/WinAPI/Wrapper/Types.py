@@ -225,6 +225,7 @@ class CtlCodes(Enum):
     USB_GET_HUB_CAPABILITIES_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_CAPABILITIES_EX)
     USB_GET_PORT_CONNECTOR_PROPERTIES = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_PORT_CONNECTOR_PROPERTIES)
     USB_GET_NODE_CONNECTION_INFORMATION_EX_V2 = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX_V2)
+    USB_GET_NODE_CONNECTION_INFORMATION_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -497,3 +498,24 @@ class USBNodeConnectionInfoExV2:
     is_device_super_speed_capable_or_higher : bool
     is_device_operating_at_super_speed_plus_or_higher : bool
     is_device_super_speed_plus_capable_or_higher : bool
+
+class USBConnectionStatuses(Enum):
+    NoDeviceConnected = 0
+    DeviceConnected = 1
+    DeviceFailedEnumeration = 2
+    DeviceGeneralFailure = 3
+    DeviceCausedOvercurrent = 4
+    DeviceNotEnoughPower = 5
+    DeviceNotEnoughBandwidth = 6
+    DeviceHubNestedTooDeeply = 7
+    DeviceInLegacyHub = 8
+    DeviceEnumerating = 9
+    DeviceReset = 10
+
+# TODO: more fields
+@dataclass
+class USBNodeConnectionInfoEx:
+    connection_index : int
+    device_is_hub : bool
+    device_address : int
+    connection_status : USBConnectionStatuses
