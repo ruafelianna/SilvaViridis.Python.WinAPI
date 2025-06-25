@@ -224,6 +224,7 @@ class CtlCodes(Enum):
     USB_GET_HUB_INFORMATION_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_INFORMATION_EX)
     USB_GET_HUB_CAPABILITIES_EX = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_HUB_CAPABILITIES_EX)
     USB_GET_PORT_CONNECTOR_PROPERTIES = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_PORT_CONNECTOR_PROPERTIES)
+    USB_GET_NODE_CONNECTION_INFORMATION_EX_V2 = usb_ctl(UserModeIOCTLFunctionCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX_V2)
 
 class USBUserRequestCodes(Enum):
     GET_CONTROLLER_INFO_0 = 0x00000001
@@ -485,3 +486,14 @@ class USBConnectorProps:
     port_is_debug_capable : bool
     port_has_multiple_companions : bool
     port_connector_is_type_c : bool
+
+@dataclass
+class USBNodeConnectionInfoExV2:
+    connection_index : int
+    is_usb_110_supported : bool
+    is_usb_200_supported : bool
+    is_usb_300_supported : bool
+    is_device_operating_at_super_speed_or_higher : bool
+    is_device_super_speed_capable_or_higher : bool
+    is_device_operating_at_super_speed_plus_or_higher : bool
+    is_device_super_speed_plus_capable_or_higher : bool

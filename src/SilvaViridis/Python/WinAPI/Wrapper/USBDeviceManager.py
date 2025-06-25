@@ -20,6 +20,7 @@ from .IOAPISet import (
     ioctl_get_usb_hub_extra_info,
     ioctl_get_usb_hub_capabilities_ex,
     ioctl_get_usb_port_connector_props,
+    ioctl_get_usb_node_connection_info_ex_v2,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -59,6 +60,13 @@ class USBPortInfo:
     is_debug_capable : bool
     has_multiple_companions : bool
     is_type_c : bool
+    is_usb_110_supported : bool
+    is_usb_200_supported : bool
+    is_usb_300_supported : bool
+    is_device_operating_at_super_speed_or_higher : bool
+    is_device_super_speed_capable_or_higher : bool
+    is_device_operating_at_super_speed_plus_or_higher : bool
+    is_device_super_speed_plus_capable_or_higher : bool
 
 @dataclass
 class USBHubInfo(USBNodeInfo):
@@ -257,6 +265,7 @@ class USBDeviceManager:
 
             for i in range(node_info.number_of_ports):
                 connector_props = ioctl_get_usb_port_connector_props(hubfd, i)
+                connection_info_2 = ioctl_get_usb_node_connection_info_ex_v2(hubfd, i)
 
                 ports.append(USBPortInfo(
                     index = connector_props.connection_index,
@@ -267,6 +276,13 @@ class USBDeviceManager:
                     is_debug_capable = connector_props.port_is_debug_capable,
                     has_multiple_companions = connector_props.port_has_multiple_companions,
                     is_type_c = connector_props.port_connector_is_type_c,
+                    is_usb_110_supported = connection_info_2.is_usb_110_supported,
+                    is_usb_200_supported = connection_info_2.is_usb_200_supported,
+                    is_usb_300_supported = connection_info_2.is_usb_300_supported,
+                    is_device_operating_at_super_speed_or_higher = connection_info_2.is_device_operating_at_super_speed_or_higher,
+                    is_device_super_speed_capable_or_higher = connection_info_2.is_device_super_speed_capable_or_higher,
+                    is_device_operating_at_super_speed_plus_or_higher = connection_info_2.is_device_operating_at_super_speed_plus_or_higher,
+                    is_device_super_speed_plus_capable_or_higher = connection_info_2.is_device_super_speed_plus_capable_or_higher,
                 ))
 
         finally:

@@ -240,6 +240,50 @@ class USB_PORT_CONNECTOR_PROPERTIES(C.Structure):
 
 PUSB_PORT_CONNECTOR_PROPERTIES = C.POINTER(USB_PORT_CONNECTOR_PROPERTIES)
 
+class USB_PROTOCOLS_BITS(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("Usb110", W.ULONG, 1),
+        ("Usb200", W.ULONG, 1),
+        ("Usb300", W.ULONG, 1),
+        ("ReservedMBZ", W.ULONG, 29),
+    ]
+
+class USB_PROTOCOLS(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("ul", W.ULONG),
+        ("bits", USB_PROTOCOLS_BITS),
+    ]
+
+class USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS_BITS(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("DeviceIsOperatingAtSuperSpeedOrHigher", W.ULONG, 1),
+        ("DeviceIsSuperSpeedCapableOrHigher", W.ULONG, 1),
+        ("DeviceIsOperatingAtSuperSpeedPlusOrHigher", W.ULONG, 1),
+        ("DeviceIsSuperSpeedPlusCapableOrHigher", W.ULONG, 1),
+        ("ReservedMBZ", W.ULONG, 28),
+    ]
+
+class USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS(C.Union):
+    _pack_ = 1
+    _fields_ = [
+        ("ul", W.ULONG),
+        ("bits", USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS_BITS),
+    ]
+
+class USB_NODE_CONNECTION_INFORMATION_EX_V2(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("ConnectionIndex", W.ULONG),
+        ("Length", W.ULONG),
+        ("SupportedUsbProtocols", USB_PROTOCOLS),
+        ("Flags", USB_NODE_CONNECTION_INFORMATION_EX_V2_FLAGS),
+    ]
+
+PUSB_NODE_CONNECTION_INFORMATION_EX_V2 = C.POINTER(USB_NODE_CONNECTION_INFORMATION_EX_V2)
+
 # usbuser.h
 
 class USBUSER_REQUEST_HEADER(C.Structure):
