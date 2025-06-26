@@ -22,6 +22,7 @@ from .IOAPISet import (
     ioctl_get_usb_port_connector_props,
     ioctl_get_usb_node_connection_info_ex_v2,
     ioctl_get_usb_node_connection_info_ex,
+    ioctl_get_usb_node_connection_driver_key_name,
 )
 from .SetupAPI import (
     get_class_devs,
@@ -74,6 +75,7 @@ class USBPortInfo:
     device_is_hub : bool
     device_address : int
     connection_status : USBConnectionStatuses
+    connected_device_driver_key : str | None
 
 @dataclass
 class USBHubInfo(USBNodeInfo):
@@ -284,6 +286,10 @@ class USBDeviceManager:
                 ):
                     connection_info.speed = USBDeviceSpeeds.UsbSuperSpeed
 
+                driver_key_name = None \
+                    if connection_info.connection_status == USBConnectionStatuses.NoDeviceConnected \
+                    else ioctl_get_usb_node_connection_driver_key_name(hubfd, i)
+
                 ports.append(USBPortInfo(
                     index = connector_props.connection_index,
                     companion_index = connector_props.companion_index,
@@ -304,6 +310,7 @@ class USBDeviceManager:
                     device_is_hub = connection_info.device_is_hub,
                     device_address = connection_info.device_address,
                     connection_status = connection_info.connection_status,
+                    connected_device_driver_key = driver_key_name,
                 ))
 
         finally:
