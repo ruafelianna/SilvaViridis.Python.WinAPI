@@ -44,6 +44,8 @@ from ..types import (
     USB_NODE_CONNECTION_INFORMATION_EX,
     USB_NODE_CONNECTION_DRIVERKEY_NAME,
     PUSB_NODE_CONNECTION_DRIVERKEY_NAME,
+    USB_NODE_CONNECTION_NAME,
+    PUSB_NODE_CONNECTION_NAME,
 )
 
 def _ioctl[T : C.Structure, O](
@@ -408,7 +410,7 @@ def ioctl_get_usb_node_connection_info_ex(
 def ioctl_get_usb_node_connection_driver_key_name(
     fd : W.HANDLE,
     connection_index : int,
-):
+) -> str:
     def create():
         data = USB_NODE_CONNECTION_DRIVERKEY_NAME()
         data.ConnectionIndex = connection_index + 1
@@ -431,6 +433,39 @@ def ioctl_get_usb_node_connection_driver_key_name(
     return _ioctl(
         fd,
         CtlCodes.USB_GET_NODE_CONNECTION_DRIVERKEY_NAME,
+        create,
+        get_result,
+        require_alloc = True,
+        get_n_bytes = lambda data: data.ActualLength,
+        init_ptr = init_ptr,
+    )
+
+def ioctl_get_node_connection_name(
+    fd : W.HANDLE,
+    connection_index : int,
+) -> str:
+    def create():
+        data = USB_NODE_CONNECTION_NAME()
+        data.ConnectionIndex = connection_index + 1
+        return data
+
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_NODE_CONNECTION_NAME,
+    ) -> str:
+        if isinstance(data, tuple):
+            ptr, n_bytes = data
+            return _extract_str(ptr, n_bytes, [W.ULONG, W.ULONG])
+        raise NotImplementedError()
+
+    def init_ptr(
+        data_ptr : C.c_void_p,
+    ):
+        p = C.cast(data_ptr, PUSB_NODE_CONNECTION_NAME)[0]
+        p.ConnectionIndex = connection_index + 1
+
+    return _ioctl(
+        fd,
+        CtlCodes.USB_GET_NODE_CONNECTION_NAME,
         create,
         get_result,
         require_alloc = True,

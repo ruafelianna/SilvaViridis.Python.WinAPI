@@ -349,6 +349,16 @@ class USB_NODE_CONNECTION_DRIVERKEY_NAME(C.Structure):
 
 PUSB_NODE_CONNECTION_DRIVERKEY_NAME = C.POINTER(USB_NODE_CONNECTION_DRIVERKEY_NAME)
 
+class USB_NODE_CONNECTION_NAME(C.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("ConnectionIndex", W.ULONG),
+        ("ActualLength",  W.ULONG),
+        ("NodeName", W.WCHAR * 1),
+    ]
+
+PUSB_NODE_CONNECTION_NAME = C.POINTER(USB_NODE_CONNECTION_NAME)
+
 # usbuser.h
 
 class USBUSER_REQUEST_HEADER(C.Structure):
