@@ -1,6 +1,8 @@
 import ctypes as C
 import ctypes.wintypes as W
 
+from collections.abc import Callable
+
 from .Exceptions import MemAllocError, raise_ex
 from .Memory import alloc, free
 from .Types import (
@@ -42,384 +44,361 @@ from ..types import (
     USB_NODE_CONNECTION_INFORMATION_EX,
 )
 
+def _ioctl[T : C.Structure, O](
+    fd : W.HANDLE,
+    code : CtlCodes,
+    create : Callable[[], T],
+    get_result : Callable[[tuple[C.c_void_p, int] | T], O],
+    require_alloc : bool = False,
+    get_n_bytes : Callable[[T], int] | None = None,
+    init_ptr : Callable[[C.c_void_p], None] | None = None,
+) -> O:
+    data = create()
+    n_bytes = W.DWORD(0)
+
+    success = DeviceIoControl(
+        fd,
+        code.value,
+        C.byref(data),
+        C.sizeof(data),
+        C.byref(data),
+        C.sizeof(data),
+        C.byref(n_bytes),
+        None,
+    )
+
+    if success == FALSE:
+        raise_ex(C.GetLastError())
+
+    if require_alloc:
+        if get_n_bytes is None:
+            raise ValueError("Not all required parameters are set")
+
+        n_bytes = get_n_bytes(data)
+
+        data_ptr = alloc(n_bytes)
+
+        if data_ptr is None:
+            raise MemAllocError()
+
+        if init_ptr is not None:
+            init_ptr(data_ptr)
+
+        success = DeviceIoControl(
+            fd,
+            code.value,
+            data_ptr,
+            n_bytes,
+            data_ptr,
+            n_bytes,
+            None,
+            None,
+        )
+
+        if success == FALSE:
+            raise_ex(C.GetLastError())
+
+        result = get_result((data_ptr, n_bytes))
+
+        free(data_ptr)
+
+        return result
+    else:
+        return get_result(data)
+
+def _extract_str(
+    ptr : C.c_void_p,
+    n_bytes : int,
+    types_to_skip : list[type[C._SimpleCData | C.Structure | C.Union]], # type: ignore
+) -> str:
+    not_str_len = sum([C.sizeof(t) for t in types_to_skip]) # type: ignore
+
+    return ptr_to_str(
+        int(ptr) + not_str_len,
+        n_bytes - not_str_len,
+    )
+
 def ioctl_get_hcd_driver_key_name(
     fd : W.HANDLE,
 ) -> str:
-    driver_key_name = USB_HCD_DRIVERKEY_NAME()
-    nBytes = W.ULONG(0)
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_HCD_DRIVERKEY_NAME,
+    ) -> str:
+        if isinstance(data, tuple):
+            ptr, n_bytes = data
+            return _extract_str(ptr, n_bytes, [W.ULONG])
+        raise NotImplementedError()
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.GET_HCD_DRIVERKEY_NAME.value,
-        C.byref(driver_key_name),
-        C.sizeof(driver_key_name),
-        C.byref(driver_key_name),
-        C.sizeof(driver_key_name),
-        C.byref(nBytes),
-        None,
+        CtlCodes.GET_HCD_DRIVERKEY_NAME,
+        lambda: USB_HCD_DRIVERKEY_NAME(),
+        get_result,
+        require_alloc = True,
+        get_n_bytes = lambda data: data.ActualLength,
     )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    nBytes = driver_key_name.ActualLength
-
-    driver_key_name_ptr = alloc(nBytes)
-
-    if driver_key_name_ptr is None:
-        raise MemAllocError()
-
-    success = DeviceIoControl(
-        fd,
-        CtlCodes.GET_HCD_DRIVERKEY_NAME.value,
-        driver_key_name_ptr,
-        nBytes,
-        driver_key_name_ptr,
-        nBytes,
-        None,
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    not_str_len = C.sizeof(W.ULONG)
-
-    driver_key_name = ptr_to_str(
-        int(driver_key_name_ptr) + not_str_len,
-        nBytes - not_str_len,
-    )
-
-    free(driver_key_name_ptr)
-
-    return driver_key_name
 
 def ioctl_get_usb_controller_info(
     fd : W.HANDLE,
 ) -> ControllerInfo:
-    controller_info = USBUSER_CONTROLLER_INFO_0()
-    controller_info.Header.UsbUserRequest = USBUserRequestCodes.GET_CONTROLLER_INFO_0.value
-    controller_info.Header.RequestBufferLength = C.sizeof(controller_info)
-    nBytes = W.DWORD(0)
+    def create():
+        data  = USBUSER_CONTROLLER_INFO_0()
+        data.Header.UsbUserRequest = USBUserRequestCodes.GET_CONTROLLER_INFO_0.value
+        data.Header.RequestBufferLength = C.sizeof(data)
+        return data
 
-    success = DeviceIoControl(
+    def get_result(
+        data : tuple[C.c_void_p, int] | USBUSER_CONTROLLER_INFO_0,
+    ) -> ControllerInfo:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        info = data.Info0
+        return ControllerInfo(
+            pci_vendor_id = info.PciVendorId,
+            pci_device_id = info.PciDeviceId,
+            pci_revision = info.PciRevision,
+            number_of_root_ports = info.NumberOfRootPorts,
+            controller_flavor = USBControllerFlavors(info.ControllerFlavor),
+            hc_feature_flags = HCFeatureFlags(info.HcFeatureFlags),
+        )
+
+    return _ioctl(
         fd,
-        CtlCodes.USB_USER_REQUEST.value,
-        C.byref(controller_info),
-        C.sizeof(controller_info),
-        C.byref(controller_info),
-        C.sizeof(controller_info),
-        C.byref(nBytes),
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    return ControllerInfo(
-        pci_vendor_id = controller_info.Info0.PciVendorId,
-        pci_device_id = controller_info.Info0.PciDeviceId,
-        pci_revision = controller_info.Info0.PciRevision,
-        number_of_root_ports = controller_info.Info0.NumberOfRootPorts,
-        controller_flavor = USBControllerFlavors(controller_info.Info0.ControllerFlavor),
-        hc_feature_flags = HCFeatureFlags(controller_info.Info0.HcFeatureFlags),
+        CtlCodes.USB_USER_REQUEST,
+        create,
+        get_result,
     )
 
 def ioctl_get_root_hub_name(
     fd : W.HANDLE,
 ) -> str:
-    root_hub_name = USB_ROOT_HUB_NAME()
-    nBytes = W.DWORD(0)
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_ROOT_HUB_NAME,
+    ) -> str:
+        if isinstance(data, tuple):
+            ptr, n_bytes = data
+            return _extract_str(ptr, n_bytes, [W.ULONG])
+        raise NotImplementedError()
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_ROOT_HUB_NAME.value,
-        None,
-        0,
-        C.byref(root_hub_name),
-        C.sizeof(root_hub_name),
-        C.byref(nBytes),
-        None,
+        CtlCodes.USB_GET_ROOT_HUB_NAME,
+        lambda: USB_ROOT_HUB_NAME(),
+        get_result,
+        require_alloc = True,
+        get_n_bytes = lambda data: data.ActualLength,
     )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    nBytes = root_hub_name.ActualLength
-
-    root_hub_name_ptr = alloc(nBytes)
-
-    if root_hub_name_ptr is None:
-        raise MemAllocError()
-
-    success = DeviceIoControl(
-        fd,
-        CtlCodes.USB_GET_ROOT_HUB_NAME.value,
-        None,
-        0,
-        root_hub_name_ptr,
-        nBytes,
-        None,
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    not_str_len = C.sizeof(W.ULONG)
-
-    root_hub_name = ptr_to_str(
-        int(root_hub_name_ptr) + not_str_len,
-        nBytes - not_str_len,
-    )
-
-    free(root_hub_name_ptr)
-
-    return root_hub_name
 
 def ioctl_get_usb_node_info(
     fd : W.HANDLE,
 ) -> USBHubNodeInformation | USBMIParentNodeInformation:
-    node_info = USB_NODE_INFORMATION()
-    nBytes = W.DWORD(0)
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_NODE_INFORMATION,
+    ) -> USBHubNodeInformation | USBMIParentNodeInformation:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        if data.NodeType == USBHubNodeTypes.UsbHub.value:
+            hub_info = data.u.HubInformation
+            return USBHubNodeInformation(
+                is_bus_powered = bool(hub_info.HubIsBusPowered),
+                number_of_ports = hub_info.HubDescriptor.bNumberOfPorts,
+                hub_characteristics = hub_info.HubDescriptor.wHubCharacteristics,
+                power_on_to_power_good = hub_info.HubDescriptor.bPowerOnToPowerGood,
+                hub_control_current = hub_info.HubDescriptor.bHubControlCurrent,
+                remove_and_power_mask = list(hub_info.HubDescriptor.bRemoveAndPowerMask),
+            )
+        elif data.NodeType == USBHubNodeTypes.UsbMIParent.value:
+            mi_info = data.u.MiParentInformation
+            return USBMIParentNodeInformation(
+                number_of_interfaces = mi_info.NumberOfInterfaces,
+            )
+        else:
+            raise NotImplementedError()
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_NODE_INFORMATION.value,
-        C.byref(node_info),
-        C.sizeof(USB_NODE_INFORMATION),
-        C.byref(node_info),
-        C.sizeof(USB_NODE_INFORMATION),
-        C.byref(nBytes),
-        None,
+        CtlCodes.USB_GET_NODE_INFORMATION,
+        lambda: USB_NODE_INFORMATION(),
+        get_result,
     )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    if node_info.NodeType == USBHubNodeTypes.UsbHub.value:
-        hub_info = node_info.u.HubInformation
-        return USBHubNodeInformation(
-            is_bus_powered = bool(hub_info.HubIsBusPowered),
-            number_of_ports = hub_info.HubDescriptor.bNumberOfPorts,
-            hub_characteristics = hub_info.HubDescriptor.wHubCharacteristics,
-            power_on_to_power_good = hub_info.HubDescriptor.bPowerOnToPowerGood,
-            hub_control_current = hub_info.HubDescriptor.bHubControlCurrent,
-            remove_and_power_mask = list(hub_info.HubDescriptor.bRemoveAndPowerMask),
-        )
-    elif node_info.NodeType == USBHubNodeTypes.UsbMIParent.value:
-        mi_info = node_info.u.MiParentInformation
-        return USBMIParentNodeInformation(
-            number_of_interfaces = mi_info.NumberOfInterfaces,
-        )
-    else:
-        raise NotImplementedError()
 
 def ioctl_get_usb_hub_extra_info(
     fd : W.HANDLE,
 ) -> USBHubInformation | USB30HubInformation:
-    hub_descriptor = USB_HUB_INFORMATION_EX()
-    nBytes = W.DWORD(0)
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_HUB_INFORMATION_EX,
+    ) -> USB30HubInformation | USBHubInformation:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        if data.HubType == USBHubTypes.Usb30Hub.value:
+            hub_info = data.u.Usb30HubDescriptor
+            return USB30HubInformation(
+                highest_port_number = data.HighestPortNumber,
+                number_of_ports = hub_info.bNumberOfPorts,
+                hub_characteristics = hub_info.wHubCharacteristics,
+                power_on_to_power_good = hub_info.bPowerOnToPowerGood,
+                hub_control_current = hub_info.bHubControlCurrent,
+                hub_packet_header_decode_latency = hub_info.bHubHdrDecLat,
+                hub_delay = hub_info.wHubDelay,
+                device_removable = hub_info.DeviceRemovable,
+            )
+        elif data.HubType in [USBHubTypes.UsbRootHub.value, USBHubTypes.Usb20Hub.value]:
+            hub_info = data.u.UsbHubDescriptor
+            return USBHubInformation(
+                highest_port_number = data.HighestPortNumber,
+                number_of_ports = hub_info.bNumberOfPorts,
+                hub_characteristics = hub_info.wHubCharacteristics,
+                power_on_to_power_good = hub_info.bPowerOnToPowerGood,
+                hub_control_current = hub_info.bHubControlCurrent,
+                remove_and_power_mask = list(hub_info.bRemoveAndPowerMask),
+            )
+        else:
+            raise NotImplementedError()
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_HUB_INFORMATION_EX.value,
-        C.byref(hub_descriptor),
-        C.sizeof(USB_HUB_INFORMATION_EX),
-        C.byref(hub_descriptor),
-        C.sizeof(USB_HUB_INFORMATION_EX),
-        C.byref(nBytes),
-        None,
+        CtlCodes.USB_GET_HUB_INFORMATION_EX,
+        lambda: USB_HUB_INFORMATION_EX(),
+        get_result,
     )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    if hub_descriptor.HubType == USBHubTypes.Usb30Hub.value:
-        hub_info = hub_descriptor.u.Usb30HubDescriptor
-        return USB30HubInformation(
-            highest_port_number = hub_descriptor.HighestPortNumber,
-            number_of_ports = hub_info.bNumberOfPorts,
-            hub_characteristics = hub_info.wHubCharacteristics,
-            power_on_to_power_good = hub_info.bPowerOnToPowerGood,
-            hub_control_current = hub_info.bHubControlCurrent,
-            hub_packet_header_decode_latency = hub_info.bHubHdrDecLat,
-            hub_delay = hub_info.wHubDelay,
-            device_removable = hub_info.DeviceRemovable,
-        )
-    elif hub_descriptor.HubType in [USBHubTypes.UsbRootHub.value, USBHubTypes.Usb20Hub.value]:
-        hub_info = hub_descriptor.u.UsbHubDescriptor
-        return USBHubInformation(
-            highest_port_number = hub_descriptor.HighestPortNumber,
-            number_of_ports = hub_info.bNumberOfPorts,
-            hub_characteristics = hub_info.wHubCharacteristics,
-            power_on_to_power_good = hub_info.bPowerOnToPowerGood,
-            hub_control_current = hub_info.bHubControlCurrent,
-            remove_and_power_mask = list(hub_info.bRemoveAndPowerMask),
-        )
-    else:
-        raise NotImplementedError()
 
 def ioctl_get_usb_hub_capabilities_ex(
     fd : W.HANDLE,
 ) -> USBHubCapabilities:
-    capabilities = USB_HUB_CAPABILITIES_EX()
-    nBytes = W.DWORD(0)
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_HUB_CAPABILITIES_EX,
+    ) -> USBHubCapabilities:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        bits = data.CapabilityFlags.bits
+        return USBHubCapabilities(
+            is_high_speed_capable = bool(bits.HubIsHighSpeedCapable),
+            is_high_speed = bool(bits.HubIsHighSpeed),
+            is_multi_tt_capable = bool(bits.HubIsMultiTtCapable),
+            is_multi_tt = bool(bits.HubIsMultiTt),
+            is_root = bool(bits.HubIsRoot),
+            is_armed_wake_on_connect = bool(bits.HubIsArmedWakeOnConnect),
+            is_bus_powered = bool(bits.HubIsBusPowered),
+        )
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_HUB_CAPABILITIES_EX.value,
-        C.byref(capabilities),
-        C.sizeof(USB_HUB_INFORMATION_EX),
-        C.byref(capabilities),
-        C.sizeof(USB_HUB_INFORMATION_EX),
-        C.byref(nBytes),
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    return USBHubCapabilities(
-        is_high_speed_capable = bool(capabilities.CapabilityFlags.bits.HubIsHighSpeedCapable),
-        is_high_speed = bool(capabilities.CapabilityFlags.bits.HubIsHighSpeed),
-        is_multi_tt_capable = bool(capabilities.CapabilityFlags.bits.HubIsMultiTtCapable),
-        is_multi_tt = bool(capabilities.CapabilityFlags.bits.HubIsMultiTt),
-        is_root = bool(capabilities.CapabilityFlags.bits.HubIsRoot),
-        is_armed_wake_on_connect = bool(capabilities.CapabilityFlags.bits.HubIsArmedWakeOnConnect),
-        is_bus_powered = bool(capabilities.CapabilityFlags.bits.HubIsBusPowered),
+        CtlCodes.USB_GET_HUB_CAPABILITIES_EX,
+        lambda: USB_HUB_CAPABILITIES_EX(),
+        get_result,
     )
 
 def ioctl_get_usb_port_connector_props(
     fd : W.HANDLE,
     connection_index : int,
 ) -> USBConnectorProps:
-    props = USB_PORT_CONNECTOR_PROPERTIES()
-    nBytes = W.DWORD(0)
+    def create():
+        data = USB_PORT_CONNECTOR_PROPERTIES()
+        data.ConnectionIndex = connection_index + 1
+        return data
 
-    props.ConnectionIndex = connection_index + 1
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_PORT_CONNECTOR_PROPERTIES,
+    ) -> USBConnectorProps:
+        if isinstance(data, tuple):
+            ptr, n_bytes = data
+            p = C.cast(ptr, PUSB_PORT_CONNECTOR_PROPERTIES)[0]
+            port_bits = p.UsbPortProperties.bits
+            return USBConnectorProps(
+                connection_index = p.ConnectionIndex,
+                companion_index = p.CompanionIndex,
+                companion_port_number = p.CompanionPortNumber,
+                companion_hub_symlink = _extract_str(ptr, n_bytes, [
+                    W.ULONG,
+                    W.ULONG,
+                    W.USHORT,
+                    W.USHORT,
+                    USB_PORT_PROPERTIES,
+                ]),
+                port_is_user_connectable = bool(port_bits.PortIsUserConnectable),
+                port_is_debug_capable = bool(port_bits.PortIsDebugCapable),
+                port_has_multiple_companions = bool(port_bits.PortHasMultipleCompanions),
+                port_connector_is_type_c = bool(port_bits.PortConnectorIsTypeC),
+            )
+        raise NotImplementedError()
 
-    success = DeviceIoControl(
+    def init_ptr(
+        data_ptr : C.c_void_p,
+    ):
+        p = C.cast(data_ptr, PUSB_PORT_CONNECTOR_PROPERTIES)[0]
+        p.ConnectionIndex = connection_index + 1
+
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_PORT_CONNECTOR_PROPERTIES.value,
-        C.byref(props),
-        C.sizeof(props),
-        C.byref(props),
-        C.sizeof(props),
-        C.byref(nBytes),
-        None,
+        CtlCodes.USB_GET_PORT_CONNECTOR_PROPERTIES,
+        create,
+        get_result,
+        require_alloc = True,
+        get_n_bytes = lambda data: data.ActualLength,
+        init_ptr = init_ptr,
     )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    nBytes = props.ActualLength
-
-    props_ptr = alloc(nBytes)
-
-    if props_ptr is None:
-        raise MemAllocError()
-
-    p = C.cast(props_ptr, PUSB_PORT_CONNECTOR_PROPERTIES)[0]
-    p.ConnectionIndex = connection_index + 1
-
-    success = DeviceIoControl(
-        fd,
-        CtlCodes.USB_GET_PORT_CONNECTOR_PROPERTIES.value,
-        props_ptr,
-        nBytes,
-        props_ptr,
-        nBytes,
-        None,
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    not_str_len = C.sizeof(W.ULONG) * 2 + C.sizeof(W.USHORT) * 2 + C.sizeof(USB_PORT_PROPERTIES)
-
-    result = USBConnectorProps(
-        connection_index = props.ConnectionIndex,
-        companion_index = props.CompanionIndex,
-        companion_port_number = props.CompanionPortNumber,
-        companion_hub_symlink = ptr_to_str(
-            int(props_ptr) + not_str_len,
-            nBytes - not_str_len,
-        ),
-        port_is_user_connectable = bool(props.UsbPortProperties.bits.PortIsUserConnectable),
-        port_is_debug_capable = bool(props.UsbPortProperties.bits.PortIsDebugCapable),
-        port_has_multiple_companions = bool(props.UsbPortProperties.bits.PortHasMultipleCompanions),
-        port_connector_is_type_c = bool(props.UsbPortProperties.bits.PortConnectorIsTypeC),
-    )
-
-    free(props_ptr)
-
-    return result
 
 def ioctl_get_usb_node_connection_info_ex_v2(
     fd : W.HANDLE,
     connection_index : int,
 ) -> USBNodeConnectionInfoExV2:
-    info = USB_NODE_CONNECTION_INFORMATION_EX_V2()
-    nBytes = W.DWORD(0)
+    def create():
+        data = USB_NODE_CONNECTION_INFORMATION_EX_V2()
+        data.ConnectionIndex = connection_index + 1
+        data.Length = C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX_V2)
+        data.SupportedUsbProtocols.bits.Usb300 = 1
+        return data
 
-    info.ConnectionIndex = connection_index + 1
-    info.Length = C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX_V2)
-    info.SupportedUsbProtocols.bits.Usb300 = 1
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_NODE_CONNECTION_INFORMATION_EX_V2,
+    ) -> USBNodeConnectionInfoExV2:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        sbits = data.SupportedUsbProtocols.bits
+        fbits = data.Flags.bits
+        return USBNodeConnectionInfoExV2(
+            connection_index = data.ConnectionIndex,
+            is_usb_110_supported = bool(sbits.Usb110),
+            is_usb_200_supported = bool(sbits.Usb200),
+            is_usb_300_supported = bool(sbits.Usb300),
+            is_device_operating_at_super_speed_or_higher = bool(fbits.DeviceIsOperatingAtSuperSpeedOrHigher),
+            is_device_super_speed_capable_or_higher = bool(fbits.DeviceIsSuperSpeedCapableOrHigher),
+            is_device_operating_at_super_speed_plus_or_higher = bool(fbits.DeviceIsOperatingAtSuperSpeedPlusOrHigher),
+            is_device_super_speed_plus_capable_or_higher = bool(fbits.DeviceIsSuperSpeedPlusCapableOrHigher),
+        )
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX_V2.value,
-        C.byref(info),
-        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX_V2),
-        C.byref(info),
-        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX_V2),
-        C.byref(nBytes),
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    return USBNodeConnectionInfoExV2(
-        connection_index = info.ConnectionIndex,
-        is_usb_110_supported = bool(info.SupportedUsbProtocols.bits.Usb110),
-        is_usb_200_supported = bool(info.SupportedUsbProtocols.bits.Usb200),
-        is_usb_300_supported = bool(info.SupportedUsbProtocols.bits.Usb300),
-        is_device_operating_at_super_speed_or_higher = bool(info.Flags.bits.DeviceIsOperatingAtSuperSpeedOrHigher),
-        is_device_super_speed_capable_or_higher = bool(info.Flags.bits.DeviceIsSuperSpeedCapableOrHigher),
-        is_device_operating_at_super_speed_plus_or_higher = bool(info.Flags.bits.DeviceIsOperatingAtSuperSpeedPlusOrHigher),
-        is_device_super_speed_plus_capable_or_higher = bool(info.Flags.bits.DeviceIsSuperSpeedPlusCapableOrHigher),
+        CtlCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX_V2,
+        create,
+        get_result,
     )
 
 def ioctl_get_usb_node_connection_info_ex(
     fd : W.HANDLE,
     connection_index : int,
 ) -> USBNodeConnectionInfoEx:
-    info = USB_NODE_CONNECTION_INFORMATION_EX()
-    nBytes = W.DWORD(0)
+    def create():
+        data = USB_NODE_CONNECTION_INFORMATION_EX()
+        data.ConnectionIndex = connection_index + 1
+        return data
 
-    info.ConnectionIndex = connection_index + 1
+    def get_result(
+        data : tuple[C.c_void_p, int] | USB_NODE_CONNECTION_INFORMATION_EX,
+    ) -> USBNodeConnectionInfoEx:
+        if isinstance(data, tuple):
+            raise NotImplementedError()
+        return USBNodeConnectionInfoEx(
+            connection_index = data.ConnectionIndex,
+            speed = USBDeviceSpeeds(data.Speed),
+            device_is_hub = bool(data.DeviceIsHub),
+            device_address = data.DeviceAddress,
+            connection_status = USBConnectionStatuses(data.ConnectionStatus),
+        )
 
-    success = DeviceIoControl(
+    return _ioctl(
         fd,
-        CtlCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX.value,
-        C.byref(info),
-        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX),
-        C.byref(info),
-        C.sizeof(USB_NODE_CONNECTION_INFORMATION_EX),
-        C.byref(nBytes),
-        None,
-    )
-
-    if success == FALSE:
-        raise_ex(C.GetLastError())
-
-    return USBNodeConnectionInfoEx(
-        connection_index = info.ConnectionIndex,
-        speed = USBDeviceSpeeds(info.Speed),
-        device_is_hub = bool(info.DeviceIsHub),
-        device_address = info.DeviceAddress,
-        connection_status = USBConnectionStatuses(info.ConnectionStatus),
+        CtlCodes.USB_GET_NODE_CONNECTION_INFORMATION_EX,
+        create,
+        get_result,
     )
