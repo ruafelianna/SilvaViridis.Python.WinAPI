@@ -131,14 +131,45 @@ class USBDeviceManager:
         hcs = self.enumerate_devices(USBDevInterfaceGuids.HOST_CONTROLLER)
         hubs = self.enumerate_devices(USBDevInterfaceGuids.HUB)
 
-        for dev in devs:
-            self.print_device(dev)
-        print("-" * 20)
-        for dev in hcs:
-            self.print_device(dev)
-        print("-" * 20)
-        for dev in hubs:
-            self.print_device(dev)
+        def _print_tree(nodes : list[tuple[USBNode | None, str]], level : int):
+            for dev, prefix in nodes:
+                begin = f"{"  " * level}[{prefix}]"
+                if dev is None:
+                    print(begin)
+                    continue
+                print(f"{begin} {dev.devpath}")
+                if isinstance(dev.devinfo, USBHostControllerInfo):
+                    try:
+                        root_hub = next(r for r in hubs if dev.devinfo.root_hub_name.lower() == r.devpath[4:].lower())
+                        _print_tree([(root_hub, "HUB")], level + 1)
+                    except StopIteration:
+                        pass
+                elif isinstance(dev.devinfo, USBHubInfo):
+                    connected_devices : list[tuple[USBNode | None, str]] = []
+
+                    for p in dev.devinfo.ports:
+                        try:
+                            if p.device_is_hub and p.external_hub_name is not None:
+                                cd = next(h for h in hubs if h.devpath[4:].lower() == p.external_hub_name.lower())
+                            elif p.connected_device_driver_key is not None:
+                                cd = next(d for d in devs if d.props[DevProperties.DRIVER] == p.connected_device_driver_key)
+                            else:
+                                cd = None
+                        except StopIteration:
+                            cd = None
+
+                        if cd is None:
+                            pr = "NONE"
+                        elif p.device_is_hub:
+                            pr = "HUB"
+                        else:
+                            pr = "DEV"
+
+                        connected_devices.append((cd, f"PORT {p.index:02}][{pr}"))
+
+                    _print_tree(connected_devices, level + 1)
+
+        _print_tree([(hc, "HC") for hc in hcs], 0)
 
     def print_device(self, device : USBNode) -> None:
         print(f"Class GUID: {device.class_guid}")
