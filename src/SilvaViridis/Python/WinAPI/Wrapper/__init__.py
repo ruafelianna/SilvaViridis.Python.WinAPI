@@ -1,5 +1,5 @@
-from .USBDeviceManager import (
-    USBDeviceManager,
+from .USBDeviceManager2 import (
+    #USBDeviceManager,
     USBNode,
     USBNodeInfo,
     USBDeviceInfo,
@@ -8,7 +8,7 @@ from .USBDeviceManager import (
 )
 
 __all__ = [
-    "USBDeviceManager",
+    #"USBDeviceManager",
     "USBNode",
     "USBNodeInfo",
     "USBDeviceInfo",

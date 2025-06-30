@@ -1,5 +1,18 @@
 from SilvaViridis.Python.WinAPI.Wrapper import USBDeviceManager
 
-dm = USBDeviceManager()
+from SilvaViridis.Python.WinAPI.Wrapper.Types import (
+    DevProperties,
+    USBDevInterfaceGuids,
+)
 
-dm.build_tree()
+# dm = USBDeviceManager()
+
+# dm.build_tree()
+
+for device in USBDeviceManager.enumerate_devices(
+    USBDevInterfaceGuids.DEVICE,
+    [
+        DevProperties.DRIVER,
+    ]
+):
+    print(device)
