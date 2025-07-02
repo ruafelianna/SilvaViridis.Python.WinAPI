@@ -26,6 +26,10 @@ from .Types import (
     DevPropKeys,
 )
 
+from .WinReg import (
+    free_regkey,
+)
+
 class Device:
     def __init__(
         self,
@@ -84,6 +88,8 @@ def enumerate_devices[TOutput : Device](
             parent = get_device_property(hdevinfo, devinfo, DevPropKeys.Device_Parent)
 
             regkey = get_device_specific_registry_data(hdevinfo, devinfo)
+
+            free_regkey(regkey)
 
             props : dict[DevProperties, str | int | bytes | None] = {}
 
