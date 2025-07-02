@@ -1,16 +1,14 @@
-from SilvaViridis.Python.WinAPI.Wrapper import USBDeviceManager
+from SilvaViridis.Python.WinAPI.Wrapper import USBDeviceManager, Types
 
-from SilvaViridis.Python.WinAPI.Wrapper.Types import (
-    DevProperties,
-)
+nodes = USBDeviceManager.build_usb_tree()
 
-# dm = USBDeviceManager()
+def print_nodes(nodes : list[USBDeviceManager.USBNode]):
+    for node in nodes:
+        if isinstance(node.device, USBDeviceManager.USBPort):
+            s = f"Port {node.device.index + 1:02}"
+        else:
+            s = f"{node.device.properties[Types.DevProperties.DEVICEDESC]}"
+        print(f"{"  " * node.level} {s}")
+        print_nodes(node.children)
 
-# dm.build_tree()
-
-for device in USBDeviceManager.enumerate_usb_devices(
-    [
-        DevProperties.DRIVER,
-    ]
-):
-    print(device)
+print_nodes(nodes)

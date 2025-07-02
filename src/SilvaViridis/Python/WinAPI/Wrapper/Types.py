@@ -528,3 +528,10 @@ class USBNodeConnectionInfoEx:
     device_is_hub : bool
     device_address : int
     connection_status : USBConnectionStatuses
+
+@dataclass
+class USBControllerDevIDInfo:
+    vendor_id : str
+    device_id : str
+    sub_sys_id : str
+    revision : str

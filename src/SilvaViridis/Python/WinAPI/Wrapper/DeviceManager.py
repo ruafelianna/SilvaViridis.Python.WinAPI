@@ -23,7 +23,33 @@ from .Types import (
     USBDevInterfaceGuids,
 )
 
-def enumerate_devices[TOutput](
+class Device:
+    def __init__(
+        self,
+        class_guid : UUID,
+        interface_class_guid : UUID,
+        path : str,
+        id : str,
+        properties : dict[DevProperties, str | int | bytes | None],
+    ) -> None:
+        self.class_guid = class_guid
+        self.interface_class_guid = interface_class_guid
+        self.path = path
+        self.id = id
+        self.properties = properties
+
+    def __str__(
+        self,
+    ) -> str:
+        return f"""\
+class_guid = {self.class_guid}
+interface_class_guid = {self.interface_class_guid}
+path = {self.path}
+id = {self.id}
+{"\n".join([f"[{p.value:02}] {p.name} = {self.properties[p]}" for p in self.properties])}\
+"""
+
+def enumerate_devices[TOutput : Device](
     guid : USBDevInterfaceGuids,
     create_device : Callable[[UUID, UUID, str, str, dict[DevProperties, str | int | bytes | None]], TOutput],
     properties : Iterable[DevProperties] | Literal["all"] = [],
