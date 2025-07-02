@@ -23,6 +23,9 @@ from .Types import (
     DevProperties,
     IncludedInfoFlags,
     DevPropKeys,
+    DevicePropertyChangeScopes,
+    RegistryKeyTypes,
+    RegistryAccessRights,
 )
 from .Utils import (
     str_to_ptr,
@@ -39,6 +42,7 @@ from ..setupapi import (
     SetupDiDestroyDeviceInfoList,
     SetupDiGetDeviceInstanceId,
     SetupDiGetDeviceProperty,
+    SetupDiOpenDevRegKey,
 )
 from ..types import (
     SP_DEVINFO_DATA,
@@ -283,7 +287,7 @@ def get_device_property(
     hdevinfo : C.c_void_p,
     devinfo : DevInfoData,
     prop_key : DevPropKeys,
-):
+) -> str:
     prop_key_ptr = C.byref(prop_key.value.to_internal())
     devinfo_ptr = C.byref(devinfo.to_internal())
     prop_type = W.ULONG(0)
@@ -327,8 +331,30 @@ def get_device_property(
         free(buffer)
         raise_ex(C.GetLastError())
 
+    # TODO: could be not a string, check prop_type
     prop_value = ptr_to_str(buffer, required_size.value * 2)
 
     free(buffer)
 
     return prop_value
+
+def get_device_specific_registry_data(
+    hdevinfo : C.c_void_p,
+    devinfo : DevInfoData,
+) -> C.c_void_p:
+    devinfo_ptr = C.byref(devinfo.to_internal())
+
+    regkey_ptr = SetupDiOpenDevRegKey(
+        hdevinfo,
+        devinfo_ptr,
+        DevicePropertyChangeScopes.GLOBAL.value,
+        0,
+        RegistryKeyTypes.DEV.value,
+        RegistryAccessRights.QUERY_VALUE.value,
+    )
+
+    if regkey_ptr == INVALID_HANDLE_VALUE:
+        error = C.GetLastError()
+        raise Exception(f"Cannot get registry key handle, err: {error}")
+
+    return regkey_ptr

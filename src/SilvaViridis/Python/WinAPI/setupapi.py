@@ -92,3 +92,14 @@ SetupDiGetDeviceProperty.argtypes = [
     W.DWORD, # Flags
 ]
 SetupDiGetDeviceProperty.restype = W.BOOL
+
+SetupDiOpenDevRegKey = _setupapi.SetupDiOpenDevRegKey
+SetupDiOpenDevRegKey.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+    PSP_DEVINFO_DATA, # DeviceInfoData
+    W.DWORD, # Scope
+    W.DWORD, # HwProfile
+    W.DWORD, # KeyType
+    W.DWORD, # samDesired
+]
+SetupDiOpenDevRegKey.restype = W.HKEY

@@ -579,3 +579,24 @@ class DevPropKeys(Enum):
     Device_Parent = define_devpropkey(
         0x4340a6c5, 0x93fa, 0x4706, 0x97, 0x2c, 0x7b, 0x64, 0x80, 0x08, 0xa5, 0xa7, 8,
     )
+
+class DevicePropertyChangeScopes(Flag):
+    GLOBAL = 0x00000001
+    CONFIGSPECIFIC = 0x00000002
+    CONFIGGENERAL = 0x00000004
+
+class RegistryKeyTypes(Flag):
+    DEV = 0x00000001
+    DRV = 0x00000002
+    BOTH = 0x00000004
+
+class RegistryAccessRights(Flag):
+    QUERY_VALUE = 0x0001
+    SET_VALUE = 0x0002
+    CREATE_SUB_KEY = 0x0004
+    ENUMERATE_SUB_KEYS = 0x0008
+    NOTIFY = 0x0010
+    CREATE_LINK = 0x0020
+    WOW64_32KEY = 0x0200
+    WOW64_64KEY = 0x0100
+    WOW64_RES = 0x0300

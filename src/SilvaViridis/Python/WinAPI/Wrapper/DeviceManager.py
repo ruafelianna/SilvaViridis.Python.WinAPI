@@ -16,6 +16,7 @@ from .SetupAPI import (
     get_device_property,
     get_device_registry_property,
     next_device_info,
+    get_device_specific_registry_data,
 )
 
 from .Types import (
@@ -81,6 +82,8 @@ def enumerate_devices[TOutput : Device](
             devid = get_device_instance_id(hdevinfo, devinfo)
 
             parent = get_device_property(hdevinfo, devinfo, DevPropKeys.Device_Parent)
+
+            regkey = get_device_specific_registry_data(hdevinfo, devinfo)
 
             props : dict[DevProperties, str | int | bytes | None] = {}
 
