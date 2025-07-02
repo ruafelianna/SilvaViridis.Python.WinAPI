@@ -9,6 +9,7 @@ from .types import (
     PSP_DEVINFO_DATA,
     PSP_DEVICE_INTERFACE_DATA,
     PSP_DEVICE_INTERFACE_DETAIL_DATA,
+    PDEVPROPKEY,
 )
 
 _setupapi = C.windll.LoadLibrary("SetupAPI.dll")
@@ -78,3 +79,16 @@ SetupDiGetDeviceInstanceId.argtypes = [
     W.PDWORD, # RequiredSize
 ]
 SetupDiGetDeviceInstanceId.restype = W.BOOL
+
+SetupDiGetDeviceProperty = _setupapi.SetupDiGetDevicePropertyW
+SetupDiGetDeviceProperty.argtypes = [
+    HDEVINFO, # DeviceInfoSet
+    PSP_DEVINFO_DATA, # DeviceInfoData
+    PDEVPROPKEY, # PropertyKey
+    W.PULONG, # PropertyType
+    W.PBYTE, # PropertyBuffer
+    W.DWORD, # PropertyBufferSize
+    W.PDWORD, # RequiredSize
+    W.DWORD, # Flags
+]
+SetupDiGetDeviceProperty.restype = W.BOOL

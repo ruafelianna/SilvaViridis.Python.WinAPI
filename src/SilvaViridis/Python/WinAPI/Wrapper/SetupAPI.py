@@ -22,6 +22,7 @@ from .Types import (
     DevInterfaceData,
     DevProperties,
     IncludedInfoFlags,
+    DevPropKeys,
 )
 from .Utils import (
     str_to_ptr,
@@ -37,6 +38,7 @@ from ..setupapi import (
     SetupDiGetDeviceInterfaceDetail,
     SetupDiDestroyDeviceInfoList,
     SetupDiGetDeviceInstanceId,
+    SetupDiGetDeviceProperty,
 )
 from ..types import (
     SP_DEVINFO_DATA,
@@ -82,7 +84,7 @@ def next_device_info(
 
     return DevInfoData.create(data)
 
-def get_device_property(
+def get_device_registry_property(
     hdevinfo : C.c_void_p,
     devinfo : DevInfoData,
     property : DevProperties,
@@ -268,6 +270,7 @@ def get_device_instance_id(
     )
 
     if success == FALSE:
+        free(devid_ptr)
         raise_ex(C.GetLastError())
 
     devid = ptr_to_str(devid_ptr, required_length.value * 2)
@@ -275,3 +278,57 @@ def get_device_instance_id(
     free(devid_ptr)
 
     return devid
+
+def get_device_property(
+    hdevinfo : C.c_void_p,
+    devinfo : DevInfoData,
+    prop_key : DevPropKeys,
+):
+    prop_key_ptr = C.byref(prop_key.value.to_internal())
+    devinfo_ptr = C.byref(devinfo.to_internal())
+    prop_type = W.ULONG(0)
+    required_size = W.DWORD(0)
+
+    success = SetupDiGetDeviceProperty(
+        hdevinfo,
+        devinfo_ptr,
+        prop_key_ptr,
+        C.byref(prop_type),
+        None,
+        0,
+        C.byref(required_size),
+        0,
+    )
+
+    try:
+        raise_ex(C.GetLastError())
+    except InsufficientBuffer:
+        pass
+
+    buffer = alloc(required_size.value)
+
+    if buffer is None:
+        raise MemAllocError()
+
+    buffer_ptr = C.cast(buffer, C.POINTER(C.c_ubyte))
+
+    success = SetupDiGetDeviceProperty(
+        hdevinfo,
+        devinfo_ptr,
+        prop_key_ptr,
+        C.byref(prop_type),
+        buffer_ptr,
+        required_size,
+        None,
+        0,
+    )
+
+    if success == FALSE:
+        free(buffer)
+        raise_ex(C.GetLastError())
+
+    prop_value = ptr_to_str(buffer, required_size.value * 2)
+
+    free(buffer)
+
+    return prop_value

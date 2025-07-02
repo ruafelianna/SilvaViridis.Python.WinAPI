@@ -14,6 +14,7 @@ from .Utils import (
 from ..types import (
     SP_DEVINFO_DATA,
     SP_DEVICE_INTERFACE_DATA,
+    DEVPROPKEY,
 )
 
 INVALID_HANDLE_VALUE = -1
@@ -536,3 +537,45 @@ class USBControllerDevIDInfo:
     device_id : str
     sub_sys_id : str
     revision : str
+
+@dataclass
+class DevPropKey:
+    guid : UUID
+    pid : int
+
+    def to_internal(
+        self,
+    ) -> DEVPROPKEY:
+        prop_key = DEVPROPKEY()
+        prop_key.fmtid = uuid_to_guid(self.guid)
+        prop_key.pid = self.pid
+        return prop_key
+
+def define_devpropkey(
+    l : int,
+    w1 : int,
+    w2 : int,
+    b1 : int,
+    b2 : int,
+    b3 : int,
+    b4 : int,
+    b5 : int,
+    b6 : int,
+    b7 : int,
+    b8 : int,
+    pid : int,
+):
+    return DevPropKey(
+        guid = UUID(
+            fields = (
+                l, w1, w2, b1, b2,
+                (b3 << 40) | (b4 << 32) | (b5 << 24) | (b6 << 16) | (b7 << 8) | b8,
+            ),
+        ),
+        pid = pid,
+    )
+
+class DevPropKeys(Enum):
+    Device_Parent = define_devpropkey(
+        0x4340a6c5, 0x93fa, 0x4706, 0x97, 0x2c, 0x7b, 0x64, 0x80, 0x08, 0xa5, 0xa7, 8,
+    )

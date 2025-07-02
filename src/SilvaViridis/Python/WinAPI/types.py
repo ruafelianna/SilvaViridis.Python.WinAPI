@@ -18,6 +18,16 @@ class GUID(C.Structure):
 
 LPGUID = C.POINTER(GUID)
 
+# devpropdef.h
+
+class DEVPROPKEY(C.Structure):
+    _fields_ = [
+        ("fmtid", GUID),
+        ("pid", W.ULONG),
+    ]
+
+PDEVPROPKEY = C.POINTER(DEVPROPKEY)
+
 # minwinbase.h
 
 class OVERLAPPED_DUMMYSTRUCT(C.Structure):

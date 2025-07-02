@@ -14,6 +14,7 @@ from .SetupAPI import (
     get_device_interface,
     get_device_interface_devpath,
     get_device_property,
+    get_device_registry_property,
     next_device_info,
 )
 
@@ -21,6 +22,7 @@ from .Types import (
     DevProperties,
     IncludedInfoFlags,
     DevInterfaceGuids,
+    DevPropKeys,
 )
 
 class Device:
@@ -30,12 +32,14 @@ class Device:
         interface_class_guid : UUID,
         path : str,
         id : str,
+        parent : str,
         properties : dict[DevProperties, str | int | bytes | None],
     ) -> None:
         self.class_guid = class_guid
         self.interface_class_guid = interface_class_guid
         self.path = path
         self.id = id
+        self.parent = parent
         self.properties = properties
 
     def __str__(
@@ -46,12 +50,13 @@ class_guid = {self.class_guid}
 interface_class_guid = {self.interface_class_guid}
 path = {self.path}
 id = {self.id}
+parent = {self.parent}
 {"\n".join([f"[{p.value:02}] {p.name} = {self.properties[p]}" for p in self.properties])}\
 """
 
 def enumerate_devices[TOutput : Device](
     guid : DevInterfaceGuids,
-    create_device : Callable[[UUID, UUID, str, str, dict[DevProperties, str | int | bytes | None]], TOutput],
+    create_device : Callable[[UUID, UUID, str, str, str, dict[DevProperties, str | int | bytes | None]], TOutput],
     properties : Iterable[DevProperties] | Literal["all"] = [],
 ) -> Generator[TOutput]:
     hdevinfo = get_class_devs(
@@ -75,6 +80,8 @@ def enumerate_devices[TOutput : Device](
 
             devid = get_device_instance_id(hdevinfo, devinfo)
 
+            parent = get_device_property(hdevinfo, devinfo, DevPropKeys.Device_Parent)
+
             props : dict[DevProperties, str | int | bytes | None] = {}
 
             if properties == "all":
@@ -82,7 +89,7 @@ def enumerate_devices[TOutput : Device](
 
             for prop_name in properties:
                 try:
-                    prop = get_device_property(hdevinfo, devinfo, prop_name)
+                    prop = get_device_registry_property(hdevinfo, devinfo, prop_name)
                     props[prop_name] = prop
                 except InvalidData:
                     props[prop_name] = "N/A"
@@ -94,6 +101,7 @@ def enumerate_devices[TOutput : Device](
                 interfaceinfo.interface_class_guid,
                 devpath,
                 devid,
+                parent,
                 props,
             )
 
