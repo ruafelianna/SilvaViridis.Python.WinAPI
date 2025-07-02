@@ -42,7 +42,7 @@ from .Types import (
     USBConnectorProps,
     USBConnectionStatuses,
     USBControllerDevIDInfo,
-    USBDevInterfaceGuids,
+    DevInterfaceGuids,
     USBHubCapabilities,
     USBHubInformation,
     USBHubNodeInformation,
@@ -226,7 +226,7 @@ def enumerate_usb_host_controllers(
     properties : Iterable[DevProperties] | Literal["all"] = [],
 ) -> Generator[USBHostController]:
     return enumerate_devices(
-        USBDevInterfaceGuids.HOST_CONTROLLER,
+        DevInterfaceGuids.USB_HOST_CONTROLLER,
         USBHostController,
         properties,
     )
@@ -235,7 +235,7 @@ def enumerate_usb_hubs(
     properties : Iterable[DevProperties] | Literal["all"] = [],
 ) -> Generator[USBHub]:
     return enumerate_devices(
-        USBDevInterfaceGuids.HUB,
+        DevInterfaceGuids.USB_HUB,
         USBHub,
         properties,
     )
@@ -244,7 +244,7 @@ def enumerate_usb_devices(
     properties : Iterable[DevProperties] | Literal["all"] = [],
 ) -> Generator[USBDevice]:
     return enumerate_devices(
-        USBDevInterfaceGuids.DEVICE,
+        DevInterfaceGuids.USB_DEVICE,
         USBDevice,
         properties,
     )

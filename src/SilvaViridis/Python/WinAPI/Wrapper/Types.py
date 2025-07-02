@@ -328,10 +328,11 @@ class GMems(Flag):
 GHND = GMems.MOVEABLE | GMems.ZEROINIT
 GPTR = GMems.FIXED | GMems.ZEROINIT
 
-class USBDevInterfaceGuids(Enum):
-    DEVICE = UUID("a5dcbf10-6530-11d2-901f-00c04fb951ed")
-    HUB = UUID("f18a0e88-c30c-11d0-8815-00a0c906bed8")
-    HOST_CONTROLLER = UUID("3abf6f2d-71c4-462a-8a92-1e6861e6af27")
+class DevInterfaceGuids(Enum):
+    USB_DEVICE = UUID("a5dcbf10-6530-11d2-901f-00c04fb951ed")
+    USB_HUB = UUID("f18a0e88-c30c-11d0-8815-00a0c906bed8")
+    USB_HOST_CONTROLLER = UUID("3abf6f2d-71c4-462a-8a92-1e6861e6af27")
+    COMPORT = UUID("86e0d1e0-8089-11d0-9ce4-08003e301f73")
 
 class IncludedInfoFlags(Flag):
     DEFAULT = 0x00000001

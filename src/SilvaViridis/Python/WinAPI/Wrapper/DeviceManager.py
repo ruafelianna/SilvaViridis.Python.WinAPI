@@ -20,7 +20,7 @@ from .SetupAPI import (
 from .Types import (
     DevProperties,
     IncludedInfoFlags,
-    USBDevInterfaceGuids,
+    DevInterfaceGuids,
 )
 
 class Device:
@@ -50,7 +50,7 @@ id = {self.id}
 """
 
 def enumerate_devices[TOutput : Device](
-    guid : USBDevInterfaceGuids,
+    guid : DevInterfaceGuids,
     create_device : Callable[[UUID, UUID, str, str, dict[DevProperties, str | int | bytes | None]], TOutput],
     properties : Iterable[DevProperties] | Literal["all"] = [],
 ) -> Generator[TOutput]:
@@ -78,7 +78,7 @@ def enumerate_devices[TOutput : Device](
             props : dict[DevProperties, str | int | bytes | None] = {}
 
             if properties == "all":
-                properties = DevProperties.__iter__()
+                properties = list(DevProperties)
 
             for prop_name in properties:
                 try:
