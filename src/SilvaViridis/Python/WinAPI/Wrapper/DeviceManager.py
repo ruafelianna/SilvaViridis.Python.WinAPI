@@ -1,4 +1,4 @@
-from collections.abc import Callable, Generator, Iterable
+from collections.abc import Callable, Generator, Iterable, Sequence
 from typing import Literal
 from uuid import UUID
 
@@ -28,6 +28,7 @@ from .Types import (
 
 from .WinReg import (
     free_regkey,
+    get_registry_key_value,
 )
 
 class Device:
@@ -39,6 +40,7 @@ class Device:
         id : str,
         parent : str,
         properties : dict[DevProperties, str | int | bytes | None],
+        reg_properties : dict[str, str],
     ) -> None:
         self.class_guid = class_guid
         self.interface_class_guid = interface_class_guid
@@ -46,6 +48,7 @@ class Device:
         self.id = id
         self.parent = parent
         self.properties = properties
+        self.reg_properties = reg_properties
 
     def __str__(
         self,
@@ -61,8 +64,20 @@ parent = {self.parent}
 
 def enumerate_devices[TOutput : Device](
     guid : DevInterfaceGuids,
-    create_device : Callable[[UUID, UUID, str, str, str, dict[DevProperties, str | int | bytes | None]], TOutput],
+    create_device : Callable[
+        [
+            UUID,
+            UUID,
+            str,
+            str,
+            str,
+            dict[DevProperties, str | int | bytes | None],
+            dict[str, str],
+        ],
+        TOutput,
+    ],
     properties : Iterable[DevProperties] | Literal["all"] = [],
+    reg_properties : Sequence[str] = [],
 ) -> Generator[TOutput]:
     hdevinfo = get_class_devs(
         guid.value,
@@ -87,9 +102,20 @@ def enumerate_devices[TOutput : Device](
 
             parent = get_device_property(hdevinfo, devinfo, DevPropKeys.Device_Parent)
 
-            regkey = get_device_specific_registry_data(hdevinfo, devinfo)
+            reg_props : dict[str, str] = {}
 
-            free_regkey(regkey)
+            if len(reg_properties) > 0:
+
+                regkey = get_device_specific_registry_data(hdevinfo, devinfo)
+
+                for reg_prop_name in reg_properties:
+                    try:
+                        reg_prop_val = get_registry_key_value(regkey, reg_prop_name)
+                        reg_props[reg_prop_name] = reg_prop_val
+                    except Exception as ex:
+                        reg_props[reg_prop_name] = "N/A"
+
+                free_regkey(regkey)
 
             props : dict[DevProperties, str | int | bytes | None] = {}
 
@@ -112,6 +138,7 @@ def enumerate_devices[TOutput : Device](
                 devid,
                 parent,
                 props,
+                reg_props,
             )
 
             yield create_device(*args)
