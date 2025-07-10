@@ -3,7 +3,7 @@ from __future__ import annotations
 import ctypes as C
 import re
 
-from collections.abc import Generator, Iterable
+from collections.abc import Callable, Generator, Iterable
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Literal
@@ -217,7 +217,6 @@ class USBDevice(Device):
 
 @dataclass
 class USBNode:
-    level : int
     parent : USBNode | None
     device : USBHostController | USBHub | USBPort | USBDevice
     children : list[USBNode] = field(default_factory = list["USBNode"])
@@ -264,12 +263,10 @@ def build_usb_tree(
     ]))
 
     def _enumerate_hub(
-        level : int,
         hub : USBHub,
         parent : USBNode | None,
     ) -> USBNode:
         node = USBNode(
-            level = level,
             parent = parent,
             device = hub,
         )
@@ -279,9 +276,8 @@ def build_usb_tree(
 
             if hub_node_info is not None:
                 for i in range(hub_node_info.number_of_ports):
-                    port = USBPort(i)
+                    port = USBPort(i + 1)
                     node_port = USBNode(
-                        level = level + 1,
                         parent = node,
                         device = port,
                     )
@@ -312,13 +308,11 @@ def build_usb_tree(
                                 and isinstance(connected_dev, USBHub)
                             ):
                                 node_connected_dev = _enumerate_hub(
-                                    level + 2,
                                     connected_dev,
                                     node_port,
                                 )
                             else:
                                 node_connected_dev = USBNode(
-                                    level = level + 2,
                                     parent = node_port,
                                     device = connected_dev,
                                 )
@@ -331,7 +325,6 @@ def build_usb_tree(
 
     for hc in hcs:
         node = USBNode(
-            level = 0,
             parent = None,
             device = hc,
         )
@@ -350,9 +343,23 @@ def build_usb_tree(
 
             if root_hub is not None:
                 node.children.append(
-                    _enumerate_hub(1, root_hub, None),
+                    _enumerate_hub(root_hub, None),
                 )
 
         nodes.append(node)
 
     return nodes
+
+def print_usb_tree(
+    usb_tree : list[USBNode],
+    level : int = 0,
+    get_additional_info : Callable[[USBNode], str] | None = None,
+):
+    for node in usb_tree:
+        if isinstance(node.device, USBPort):
+            s = f"Port {node.device.index:02}"
+        else:
+            s = f"{node.device.id} ({node.device.properties[DevProperties.DEVICEDESC]})"
+        additional_info = "" if get_additional_info is None else get_additional_info(node)
+        print(f"{"  " * level}[{type(node.device).__name__}] {s}{additional_info}")
+        print_usb_tree(node.children, level + 1, get_additional_info)
